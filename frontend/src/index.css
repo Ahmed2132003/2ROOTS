@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Cairo:wght@300;400;500;600;700;900&display=swap');
+
+/* ─── Dark Theme (Default) ─────────────────────────── */
+:root[data-theme="dark"] {
+  --bg-primary:    #0A0A0F;
+  --bg-secondary:  #13131A;
+  --bg-card:       #1A1A26;
+  --bg-hover:      #22223A;
+
+  --text-primary:  #F1F5F9;
+  --text-secondary:#94A3B8;
+  --text-muted:    #475569;
+
+  --accent:        #6C63FF;
+  --accent-hover:  #8B83FF;
+  --accent-glow:   rgba(108, 99, 255, 0.3);
+
+  --border:        rgba(255,255,255,0.06);
+  --border-hover:  rgba(255,255,255,0.12);
+
+  --success:       #10B981;
+  --warning:       #F59E0B;
+  --danger:        #EF4444;
+
+  --shadow-sm:     0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md:     0 8px 32px rgba(0,0,0,0.4);
+  --shadow-lg:     0 20px 60px rgba(0,0,0,0.5);
+  --shadow-accent: 0 0 40px rgba(108,99,255,0.15);
+}
+
+/* ─── Light Theme ───────────────────────────────────── */
+:root[data-theme="light"] {
+  --bg-primary:    #F8F7FF;
+  --bg-secondary:  #FFFFFF;
+  --bg-card:       #FFFFFF;
+  --bg-hover:      #F1F0FF;
+
+  --text-primary:  #0F0E1A;
+  --text-secondary:#4B5563;
+  --text-muted:    #9CA3AF;
+
+  --accent:        #6C63FF;
+  --accent-hover:  #5B54E8;
+  --accent-glow:   rgba(108, 99, 255, 0.15);
+
+  --border:        rgba(0,0,0,0.08);
+  --border-hover:  rgba(0,0,0,0.15);
+
+  --success:       #059669;
+  --warning:       #D97706;
+  --danger:        #DC2626;
+
+  --shadow-sm:     0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md:     0 8px 32px rgba(0,0,0,0.10);
+  --shadow-lg:     0 20px 60px rgba(0,0,0,0.12);
+  --shadow-accent: 0 0 40px rgba(108,99,255,0.10);
+}
+
+/* ─── Base ──────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background:  var(--bg-primary);
+  color:       var(--text-primary);
+  font-family: 'Cairo', sans-serif;
+  transition:  background 0.3s ease, color 0.3s ease;
+  overflow-x:  hidden;
+}
+
+/* RTL/LTR */
+[dir="rtl"] { font-family: 'Cairo', sans-serif; }
+[dir="ltr"] { font-family: 'Syne', 'Cairo', sans-serif; }
+
+/* ─── Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+/* ─── Selection ─────────────────────────────────────── */
+::selection {
+  background: var(--accent);
+  color: white;
+}

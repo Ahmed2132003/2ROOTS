@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "products": "المنتجات",
+    "cart": "السلة",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "profile": "حسابي",
+    "orders": "طلباتي",
+    "logout": "تسجيل الخروج",
+    "dashboard": "لوحة التحكم"
+  },
+  "home": {
+    "hero_title": "اكتشف عالماً من التميز",
+    "hero_subtitle": "تسوق أفضل المنتجات بأسعار لا تُقاوم",
+    "shop_now": "تسوق الآن",
+    "featured": "منتجات مميزة",
+    "categories": "التصنيفات",
+    "view_all": "عرض الكل"
+  },
+  "products": {
+    "title": "المنتجات",
+    "search": "ابحث عن منتج...",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "price": "السعر",
+    "in_stock": "متاح فقط",
+    "add_to_cart": "أضف للسلة",
+    "out_of_stock": "غير متاح",
+    "no_products": "لا توجد منتجات"
+  },
+  "cart": {
+    "title": "سلة المشتريات",
+    "empty": "سلتك فارغة",
+    "total": "الإجمالي",
+    "checkout": "إتمام الشراء",
+    "remove": "حذف",
+    "quantity": "الكمية",
+    "continue": "متابعة التسوق"
+  },
+  "auth": {
+    "login_title": "تسجيل الدخول",
+    "register_title": "إنشاء حساب جديد",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirm_password": "تأكيد كلمة المرور",
+    "username": "اسم المستخدم",
+    "phone": "رقم الهاتف",
+    "login_btn": "دخول",
+    "register_btn": "إنشاء الحساب",
+    "have_account": "لديك حساب؟",
+    "no_account": "ليس لديك حساب؟"
+  },
+  "orders": {
+    "title": "طلباتي",
+    "order_id": "رقم الطلب",
+    "status": "الحالة",
+    "total": "الإجمالي",
+    "date": "التاريخ",
+    "track": "تتبع",
+    "pending": "قيد الانتظار",
+    "confirmed": "تم التأكيد",
+    "shipped": "تم الشحن",
+    "delivered": "تم التوصيل",
+    "cancelled": "ملغي",
+    "details": "تفاصيل الطلب",
+    "cancel": "إلغاء الطلب"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "egp": "ج.م"
+  }
+}

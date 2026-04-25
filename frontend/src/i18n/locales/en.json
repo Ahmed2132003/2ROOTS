@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "cart": "Cart",
+    "login": "Login",
+    "register": "Register",
+    "profile": "My Account",
+    "orders": "My Orders",
+    "logout": "Logout",
+    "dashboard": "Dashboard"
+  },
+  "home": {
+    "hero_title": "Discover a World of Excellence",
+    "hero_subtitle": "Shop the finest products at unbeatable prices",
+    "shop_now": "Shop Now",
+    "featured": "Featured Products",
+    "categories": "Categories",
+    "view_all": "View All"
+  },
+  "products": {
+    "title": "Products",
+    "search": "Search products...",
+    "filter": "Filter",
+    "sort": "Sort",
+    "price": "Price",
+    "in_stock": "In Stock Only",
+    "add_to_cart": "Add to Cart",
+    "out_of_stock": "Out of Stock",
+    "no_products": "No products found"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "total": "Total",
+    "checkout": "Checkout",
+    "remove": "Remove",
+    "quantity": "Quantity",
+    "continue": "Continue Shopping"
+  },
+  "auth": {
+    "login_title": "Sign In",
+    "register_title": "Create Account",
+    "email": "Email",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "username": "Username",
+    "phone": "Phone",
+    "login_btn": "Sign In",
+    "register_btn": "Create Account",
+    "have_account": "Already have an account?",
+    "no_account": "Don't have an account?"
+  },
+  "orders": {
+    "title": "My Orders",
+    "order_id": "Order ID",
+    "status": "Status",
+    "total": "Total",
+    "date": "Date",
+    "track": "Track",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "details": "Order Details",
+    "cancel": "Cancel Order"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "egp": "EGP"
+  }
+}
