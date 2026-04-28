@@ -4,7 +4,7 @@ import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
-import api from '../services/api';
+import api, { persistTokens } from '../services/api';
 
 // ─── Floating Background Orbs ──────────────────────────────────────────────────
 function BgOrbs() {
@@ -163,10 +163,8 @@ export default function Login() {
     }),
     onSuccess: (res) => {
       const { access, refresh } = res.data;
-      localStorage.setItem('access',  access);
-      localStorage.setItem('refresh', refresh);
-      api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
-
+      persistTokens({ access, refresh });
+      
       // Fetch user profile
       api.get('/auth/profile/').then(r => {
         setUser(r.data);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import StatsCard from '../../components/dashboard/StatsCard';
 import ProductTable from '../../components/products/ProductTable';
@@ -7,6 +7,7 @@ import { getDashboardOverview } from '../../services/dashboardService';
 import {
   createProduct,
   deleteProduct,
+  getProductCategories,
   getProducts,
   updateProduct,
   uploadProductImage,
@@ -37,6 +38,16 @@ export default function Dashboard() {
     retry: 1,
   });
 
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+  } = useQuery({
+    queryKey: ['admin-product-categories'],
+    queryFn: () => getProductCategories(),
+    retry: 1,
+  });
+
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState('');
@@ -51,37 +62,23 @@ export default function Dashboard() {
     [products],
   );
 
-  useEffect(() => {
-    let mounted = true;
+  const loadProducts = useCallback(async () => {
+    setProductsLoading(true);
+    setProductsError('');
 
-    async function loadProducts() {
-      setProductsLoading(true);
-      setProductsError('');
-
-      try {
-        const response = await getProducts();
-        if (!mounted) {
-          return;
-        }
-
-        setProducts(response);
-      } catch (productsRequestError) {
-        if (mounted) {
-          setProductsError(productsRequestError instanceof Error ? productsRequestError.message : 'Unable to load products.');
-        }
-      } finally {
-        if (mounted) {
-          setProductsLoading(false);
-        }
-      }
+    try {
+      const response = await getProducts();
+      setProducts(response);
+    } catch (productsRequestError) {
+      setProductsError(productsRequestError instanceof Error ? productsRequestError.message : 'Unable to load products.');
+    } finally {
+      setProductsLoading(false);
     }
-
-    loadProducts();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const openAddModal = () => {
     setModalMode('add');
@@ -107,16 +104,21 @@ export default function Dashboard() {
     setIsSubmitting(true);
 
     try {
+      let savedProduct;
+
       if (modalMode === 'edit' && activeProduct) {
-        const updated = await updateProduct(activeProduct.id, payload);
-        setProducts((prev) => prev.map((product) => (product.id === updated.id ? updated : product)));
+        savedProduct = await updateProduct(activeProduct.id, payload);
         setFeedback({ type: 'success', message: 'Product updated successfully.' });
       } else {
-        const created = await createProduct(payload);
-        setProducts((prev) => [created, ...prev]);
+        savedProduct = await createProduct(payload);
         setFeedback({ type: 'success', message: 'Product created successfully.' });
       }
 
+      if (payload.imageFile) {
+        await uploadProductImage(savedProduct.id, payload.imageFile);
+      }
+
+      await loadProducts();
       setIsModalOpen(false);
     } catch (submitError) {
       setFeedback({
@@ -144,19 +146,6 @@ export default function Dashboard() {
         type: 'error',
         message: deleteError instanceof Error ? deleteError.message : 'Unable to delete product.',
       });
-    }
-  };
-
-  const handleImageUpload = async (file) => {
-    try {
-      return await uploadProductImage(file);
-    } catch (uploadError) {
-      setFeedback({
-        type: 'error',
-        message: uploadError instanceof Error ? uploadError.message : 'Unable to upload image.',
-      });
-
-      return null;
     }
   };
 
@@ -205,9 +194,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {productsError && (
+        {(productsError || categoriesError) && (
           <div className="dashboard-error" role="alert">
-            <p>{productsError}</p>
+            <p>{productsError || 'Unable to load categories.'}</p>
           </div>
         )}
 
@@ -227,11 +216,12 @@ export default function Dashboard() {
           key={`${modalMode}-${activeProduct?.id ?? 'new'}`}
           isOpen={isModalOpen}
           mode={modalMode}
+          categories={categories}
+          categoriesLoading={categoriesLoading}
           initialProduct={activeProduct}
           isSubmitting={isSubmitting}
           onClose={closeModal}
           onSubmit={handleSubmitProduct}
-          onImageUpload={handleImageUpload}
         />
       )}
     </section>

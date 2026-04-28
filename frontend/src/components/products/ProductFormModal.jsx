@@ -2,9 +2,13 @@ import { useMemo, useState } from 'react';
 
 const defaultFormValues = {
   name: '',
+  categoryId: '',
+  description: '',
   price: '',
   stock: '',
-  imageUrl: '',
+  isFeatured: false,
+  isActive: true,
+  imageFile: null,
 };
 
 function FormField({ label, id, error, children }) {
@@ -24,9 +28,13 @@ function getInitialValues(initialProduct) {
 
   return {
     name: initialProduct.name,
+    categoryId: initialProduct.category?.id ? String(initialProduct.category.id) : '',
+    description: initialProduct.description || '',
     price: String(initialProduct.price),
     stock: String(initialProduct.stock),
-    imageUrl: initialProduct.imageUrl || '',
+    isFeatured: Boolean(initialProduct.isFeatured),
+    isActive: initialProduct.isActive !== false,
+    imageFile: null,
   };
 }
 
@@ -37,8 +45,8 @@ function validateForm(values) {
     errors.name = 'Name is required.';
   }
 
-  if (values.price === '' || Number(values.price) < 0) {
-    errors.price = 'Price must be 0 or greater.';
+  if (values.price === '' || Number(values.price) <= 0) {
+    errors.price = 'Price must be greater than 0.';
   }
 
   if (values.stock === '' || Number(values.stock) < 0 || !Number.isInteger(Number(values.stock))) {
@@ -51,11 +59,12 @@ function validateForm(values) {
 export default function ProductFormModal({
   isOpen,
   mode,
+  categories,
+  categoriesLoading,
   initialProduct,
   isSubmitting,
   onClose,
   onSubmit,
-  onImageUpload,
 }) {
   const [values, setValues] = useState(() => getInitialValues(initialProduct));
   const [errors, setErrors] = useState({});
@@ -83,18 +92,10 @@ export default function ProductFormModal({
     await onSubmit(values);
   };
 
-  const handleImageChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const result = await onImageUpload(file);
-
-    if (result?.imageUrl) {
-      handleChange('imageUrl', result.imageUrl);
-      setImageFileName(result.fileName || file.name);
-    }
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setValues((prev) => ({ ...prev, imageFile: file }));
+    setImageFileName(file?.name || '');
   };
 
   return (
@@ -113,6 +114,30 @@ export default function ProductFormModal({
               value={values.name}
               onChange={(event) => handleChange('name', event.target.value)}
               placeholder="Enter product name"
+            />
+          </FormField>
+
+          <FormField label="Category" id="product-category">
+            <select
+              id="product-category"
+              value={values.categoryId}
+              onChange={(event) => handleChange('categoryId', event.target.value)}
+              disabled={categoriesLoading}
+            >
+              <option value="">Uncategorized</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label="Description" id="product-description">
+            <textarea
+              id="product-description"
+              value={values.description}
+              onChange={(event) => handleChange('description', event.target.value)}
+              rows={3}
+              placeholder="Write a short product description"
             />
           </FormField>
 
@@ -140,25 +165,37 @@ export default function ProductFormModal({
             </FormField>
           </div>
 
-          <FormField label="Image URL" id="product-image-url">
-            <input
-              id="product-image-url"
-              type="url"
-              value={values.imageUrl}
-              onChange={(event) => handleChange('imageUrl', event.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
-          </FormField>
-
-          <FormField label="Upload Image (Mock)" id="product-image-upload">
+          <FormField label="Upload Image" id="product-image-upload">
             <input
               id="product-image-upload"
               type="file"
               accept="image/*"
               onChange={handleImageChange}
             />
-            {imageFileName && <small className="product-modal__hint">Uploaded: {imageFileName}</small>}
+            {imageFileName && <small className="product-modal__hint">Selected: {imageFileName}</small>}
           </FormField>
+
+          <div className="product-modal__row">
+            <label className="product-modal__field" htmlFor="is-featured">
+              <span>Featured</span>
+              <input
+                id="is-featured"
+                type="checkbox"
+                checked={values.isFeatured}
+                onChange={(event) => handleChange('isFeatured', event.target.checked)}
+              />
+            </label>
+
+            <label className="product-modal__field" htmlFor="is-active">
+              <span>Active</span>
+              <input
+                id="is-active"
+                type="checkbox"
+                checked={values.isActive}
+                onChange={(event) => handleChange('isActive', event.target.checked)}
+              />
+            </label>
+          </div>
 
           <footer className="product-modal__footer">
             <button type="button" className="ghost" onClick={onClose} disabled={isSubmitting}>Cancel</button>
