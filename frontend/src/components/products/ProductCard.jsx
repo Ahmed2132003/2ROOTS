@@ -37,11 +37,19 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
   const [adding, setAdding] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  const preferredImage = useMemo(() => {
+    if (Array.isArray(product?.images) && product.images.length > 0) {
+      return product.images.find((img) => img?.is_main)?.image || product.images[0]?.image;
+    }
+
+    return product?.main_image || product?.image || product?.imageUrl || '';
+  }, [product]);
+
   const imageSrc = useMemo(() => {
     if (imageError) return FALLBACK_IMAGE;
-    return resolveProductImageUrl(product.main_image);
-  }, [imageError, product.main_image]);
-
+    return resolveProductImageUrl(preferredImage);
+  }, [imageError, preferredImage]);
+  
   const handleAdd = async (event) => {
     event.preventDefault();
     if (!product.in_stock || adding) return;
