@@ -51,8 +51,12 @@ class Product(models.Model):
 
     @property
     def main_image(self):
-        img = self.images.filter(is_main=True).first()
-        return img.image.url if img else None
+        main_img = self.images.filter(is_main=True).first()
+        if main_img:
+            return main_img.image.url
+
+        fallback_img = self.images.first()
+        return fallback_img.image.url if fallback_img else None
 
     @property
     def in_stock(self):
