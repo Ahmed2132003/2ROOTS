@@ -31,7 +31,14 @@ function resolveProductImageUrl(rawUrl) {
     return trimmedUrl;
   }
 
-  const apiOrigin = import.meta.env.VITE_API_ORIGIN || 'http://localhost:8000';
+  const configuredOrigin = import.meta.env.VITE_API_ORIGIN?.trim();
+  const apiBaseUrl = api?.defaults?.baseURL || '';
+  const absoluteBaseMatch = typeof apiBaseUrl === 'string' ? apiBaseUrl.match(/^https?:\/\/[^/]+/i) : null;
+  const runtimeOrigin =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost:8000';
+  const apiOrigin = configuredOrigin || absoluteBaseMatch?.[0] || runtimeOrigin;  
   const mediaBase = import.meta.env.VITE_MEDIA_BASE_URL || `${apiOrigin}/media/`;
 
   if (trimmedUrl.startsWith('/media/')) {
@@ -75,7 +82,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
     if (imageError) return FALLBACK_IMAGE;
     return resolveProductImageUrl(preferredImage);
   }, [imageError, preferredImage]);
-  
+
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!product.in_stock) return;

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion as Motion } from 'framer-motion';
+import api from '../../services/api';
 
 const FALLBACK_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%2318192a'/%3E%3Ctext x='50%25' y='50%25' fill='%239aa0c4' font-size='34' text-anchor='middle' dominant-baseline='middle' font-family='Arial, sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E";
@@ -19,7 +20,14 @@ function resolveProductImageUrl(rawUrl) {
     return trimmedUrl;
   }
 
-  const apiOrigin = import.meta.env.VITE_API_ORIGIN || 'http://localhost:8000';
+  const configuredOrigin = import.meta.env.VITE_API_ORIGIN?.trim();
+  const apiBaseUrl = api?.defaults?.baseURL || '';
+  const absoluteBaseMatch = typeof apiBaseUrl === 'string' ? apiBaseUrl.match(/^https?:\/\/[^/]+/i) : null;
+  const runtimeOrigin =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost:8000';
+  const apiOrigin = configuredOrigin || absoluteBaseMatch?.[0] || runtimeOrigin;  
   const mediaBase = import.meta.env.VITE_MEDIA_BASE_URL || `${apiOrigin}/media/`;
 
   if (trimmedUrl.startsWith('/media/')) {
@@ -49,7 +57,7 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
     if (imageError) return FALLBACK_IMAGE;
     return resolveProductImageUrl(preferredImage);
   }, [imageError, preferredImage]);
-  
+
   const handleAdd = async (event) => {
     event.preventDefault();
     if (!product.in_stock || adding) return;
