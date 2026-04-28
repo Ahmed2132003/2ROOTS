@@ -23,6 +23,8 @@ import NotFound from './pages/NotFound';
 // Protected
 import PrivateRoute from './components/ui/PrivateRoute';
 import Dashboard from './pages/admin/Dashboard';
+import OrdersListPage from './pages/orders/OrdersListPage';
+import OrderDetailsPage from './pages/orders/OrderDetailsPage';
 
 export default function App() {
   const { theme } = useThemeStore();
@@ -82,6 +84,8 @@ export default function App() {
             {/* Admin */}
             <Route element={<PrivateRoute roles={['admin', 'staff']} />}>            
               <Route path="/dashboard/*" element={<Dashboard />} />
+              <Route path="/dashboard/orders" element={<OrdersListPage />} />
+              <Route path="/dashboard/orders/:id" element={<OrderDetailsPage />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
