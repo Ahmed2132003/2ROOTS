@@ -37,11 +37,29 @@ const api = axios.create({
   },
 });
 
+function isPublicEndpoint(url = '') {
+  const normalized = String(url || '').split('?')[0];
+
+  return (
+    normalized.startsWith('/products/') ||
+    normalized === '/products' ||
+    normalized.startsWith('/cart/') ||
+    normalized === '/cart' ||
+    normalized.startsWith('/auth/login') ||
+    normalized.startsWith('/auth/register') ||
+    normalized.startsWith('/auth/token')
+  );
+}
+
 api.interceptors.request.use((config) => {
+  if (isPublicEndpoint(config.url)) {
+    return config;
+  }
+
   const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  }
+  }  
   return config;
 });
 

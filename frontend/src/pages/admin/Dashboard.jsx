@@ -165,11 +165,18 @@ export default function Dashboard() {
       {!isLoading && !isError && overview && (
         <div className="stats-grid">
           {overview.stats.map((stat) => (
-            <StatsCard key={stat.key} {...stat} icon={stat.key} />
+            <StatsCard
+              key={stat.key}
+              title={stat.title}
+              value={stat.value}
+              change={stat.change}
+              trend={stat.trend}
+              icon={stat.key}
+            />
           ))}
         </div>
       )}
-
+      
       <section className="products-management">
         <header className="products-management__header">
           <div>
