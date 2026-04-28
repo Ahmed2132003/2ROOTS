@@ -39,7 +39,7 @@ function resolveProductImageUrl(rawUrl) {
   const backendOrigin =
     configuredOrigin ||
     absoluteBaseMatch?.[0] ||
-    'http://localhost:8000';
+    (window.location.origin.includes('5174') ? 'http://localhost:8000' : window.location.origin);
 
   const mediaBase = import.meta.env.VITE_MEDIA_BASE_URL || `${backendOrigin}/media/`;
 
