@@ -404,3 +404,61 @@
     grid-template-columns: 1fr;
   }
 }
+.orders-form {
+  display: grid;
+  gap: 18px;
+}
+
+.orders-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.orders-field {
+  display: grid;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.orders-field span {
+  font-size: 0.9rem;
+}
+
+.orders-field--full {
+  grid-column: 1 / -1;
+}
+
+.orders-textarea {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  outline: 0;
+  resize: vertical;
+  min-height: 96px;
+  font: inherit;
+}
+
+.orders-textarea:focus {
+  border-color: color-mix(in srgb, var(--accent) 75%, white);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.orders-form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 920px) {
+  .orders-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .orders-field--full {
+    grid-column: auto;
+  }
+}
