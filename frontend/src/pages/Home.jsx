@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion as Motion, useScroll, useTransform } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 
 // ─── Animation Variants ────────────────────────────────────────────────────────
@@ -300,7 +300,7 @@ function CategoryCard({ cat, index }) {
 }
 
 
-function ProductCard({ product, index, t }) {
+function ProductCard({ product, index, t, onAddToCart }) {  
   const [imageError, setImageError] = useState(false);
   const preferredImage = useMemo(() => {
     if (Array.isArray(product?.images) && product.images.length > 0) {
@@ -313,6 +313,12 @@ function ProductCard({ product, index, t }) {
     if (imageError) return FALLBACK_IMAGE;
     return resolveProductImageUrl(preferredImage);
   }, [imageError, preferredImage]);
+
+  const handleAddToCart = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await onAddToCart(product);
+  };
 
   return (
     <Motion.div
@@ -405,9 +411,11 @@ function ProductCard({ product, index, t }) {
             }}>
               {Number(product.base_price).toLocaleString()} {t('common.egp')}
             </div>
-            <Motion.div
+            <Motion.button            
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
+              onClick={handleAddToCart}
+              disabled={!product.in_stock}
               style={{
                 width: '36px', height: '36px',
                 background: 'var(--accent-glow)',
@@ -415,10 +423,12 @@ function ProductCard({ product, index, t }) {
                 borderRadius: '10px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '16px',
+                cursor: product.in_stock ? 'pointer' : 'not-allowed',
+                opacity: product.in_stock ? 1 : 0.65,
               }}
             >
               🛒
-            </Motion.div>
+            </Motion.button>            
           </div>
         </div>
       </Link>
@@ -431,6 +441,7 @@ function ProductCard({ product, index, t }) {
 
 export default function Home() {
   const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
   const isRTL = i18n.language === 'ar';
 
   const normalizeList = (data) => {
@@ -451,6 +462,23 @@ export default function Home() {
 
   const categoriesList = normalizeList(categories);
   const featuredList = normalizeList(featured);
+
+  const addToCart = useMutation({
+    mutationFn: ({ variantId }) => api.post('/cart/add/', { variant_id: variantId, quantity: 1 }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
+  });
+
+  const handleAddToCart = async (product) => {
+    const firstVariant = product?.variants?.[0];
+    if (!firstVariant?.id) return;
+    try {
+      await addToCart.mutateAsync({ variantId: firstVariant.id });
+    } catch (error) {
+      console.error('Failed to add product to cart from home:', error);
+    }
+  };
 
   return (
     <div>
@@ -584,7 +612,7 @@ export default function Home() {
                 gap: '24px',
               }}>
                 {featuredList.map((product, i) => (                  
-                  <ProductCard key={product.id} product={product} index={i} t={t} />
+                  <ProductCard key={product.id} product={product} index={i} t={t} onAddToCart={handleAddToCart} />                  
                 ))}
               </div>
             )}
