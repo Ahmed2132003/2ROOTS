@@ -14,8 +14,10 @@ class TrackOrderView(APIView):
         except Order.DoesNotExist:
             return Response({'detail': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        status_labels = dict(Order.STATUS_CHOICES)
+
         return Response(
-            {
+            {                
                 'id': order.id,
                 'status': order.status,
                 'status_label': order.get_status_display(),                
@@ -34,7 +36,7 @@ class TrackOrderView(APIView):
                 'history': [
                     {
                         'status': history.new_status,
-                        'status_label': history.get_new_status_display(),
+                        'status_label': status_labels.get(history.new_status, history.new_status),                        
                         'note': history.note,
                         'changed_at': history.changed_at,
                     }
