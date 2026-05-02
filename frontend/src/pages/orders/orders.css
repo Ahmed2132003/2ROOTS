@@ -97,10 +97,36 @@
   border-color: var(--border-hover);
 }
 
+.orders-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 65%, white);
+  outline-offset: 2px;
+}
+
 .orders-btn--primary {
   background: var(--accent);
   color: #fff;
   border-color: transparent;
+}
+
+.orders-btn--secondary {
+  background: color-mix(in srgb, var(--bg-secondary) 65%, var(--accent) 10%);
+  color: var(--text-primary);
+}
+
+.orders-btn--danger {
+  background: color-mix(in srgb, var(--danger) 18%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--danger) 44%, var(--border));
+  color: color-mix(in srgb, var(--danger) 72%, white);
+}
+
+.orders-btn--danger:hover {
+  background: color-mix(in srgb, var(--danger) 26%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--danger) 60%, var(--border));
+}
+
+.orders-btn--table {
+  padding: 7px 10px;
+  font-size: 0.8rem;
 }
 
 .orders-table-wrap {
@@ -149,6 +175,13 @@
 
 .orders-link:hover {
   color: var(--accent-hover);
+}
+
+.orders-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .orders-empty,
