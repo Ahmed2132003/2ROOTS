@@ -46,13 +46,19 @@ export default function App() {
     let mounted = true;
 
     async function hydrateAuth() {
+      const markAuthReady = () => {
+        if (mounted && !isAuthReady && typeof setAuthReady === 'function') {
+          setAuthReady(true);
+        }
+      };
+
       if (isAuthenticated) {
-        if (!isAuthReady) setAuthReady();
+        markAuthReady();        
         return;
       }
 
       if (!getAccessToken()) {
-        if (!isAuthReady) setAuthReady();        
+        markAuthReady();           
         return;
       }
 
@@ -66,6 +72,8 @@ export default function App() {
           clearTokens();
           clearAuth();
         }
+      } finally {
+        markAuthReady();
       }
     }
 
@@ -75,7 +83,7 @@ export default function App() {
       mounted = false;
     };
   }, [isAuthenticated, isAuthReady, setUser, clearAuth, setAuthReady]);
-  
+
   return (
     <BrowserRouter>
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

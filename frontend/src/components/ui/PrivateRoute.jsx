@@ -8,7 +8,7 @@ export default function PrivateRoute({ roles }) {
   const hasAccessToken = Boolean(getAccessToken());
 
   if (!isAuthReady) {
-    return null;
+    return <div aria-busy="true" />;    
   }
 
   if (!isAuthenticated) {

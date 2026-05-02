@@ -630,7 +630,7 @@ export default function Cart() {
             <Motion.div            
               initial="hidden"
               animate="visible"
-              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}              
             >
               <AnimatePresence mode="popLayout">
                 {items.map((item, i) => (

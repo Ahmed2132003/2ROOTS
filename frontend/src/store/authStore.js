@@ -6,17 +6,20 @@ export const useAuthStore = create(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      isAuthReady: false,
 
       setUser: (user) => set({ user, isAuthenticated: true }),
 
-      clearAuth: () => set({ user: null, isAuthenticated: false }),
+      setAuthReady: (ready = true) => set({ isAuthReady: Boolean(ready) }),
+
+      clearAuth: () => set({ user: null, isAuthenticated: false, isAuthReady: true }),
 
       logout: () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('access');
         localStorage.removeItem('refresh');
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, isAuthenticated: false, isAuthReady: true });        
       },
     }),
     {

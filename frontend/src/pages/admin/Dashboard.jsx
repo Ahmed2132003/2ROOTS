@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '../../store/authStore';
 import StatsCard from '../../components/dashboard/StatsCard';
 import ProductTable from '../../components/products/ProductTable';
 import ProductFormModal from '../../components/products/ProductFormModal';
@@ -13,8 +14,12 @@ function StatsCardSkeleton() {
 }
 
 export default function Dashboard() {
-  const { data: overview, isLoading, isError, error, refetch } = useQuery({ queryKey: ['admin-dashboard-overview'], queryFn: () => getDashboardOverview(), retry: 1 });
-  const { refetch: refetchCategories, data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useQuery({ queryKey: ['admin-product-categories'], queryFn: () => getProductCategories(), retry: 1 });
+  const { isAuthReady, isAuthenticated, user } = useAuthStore();
+  const isAdmin = String(user?.role || '').trim().toLowerCase() === 'admin';
+  const canFetchDashboardData = isAuthReady && isAuthenticated && isAdmin;
+
+  const { data: overview, isLoading, isError, error, refetch } = useQuery({ queryKey: ['admin-dashboard-overview'], queryFn: () => getDashboardOverview(), retry: 1, enabled: canFetchDashboardData });
+  const { refetch: refetchCategories, data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useQuery({ queryKey: ['admin-product-categories'], queryFn: () => getProductCategories(), retry: 1, enabled: canFetchDashboardData });  
   const [feedback, setFeedback] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('add');
@@ -25,7 +30,7 @@ export default function Dashboard() {
   const [editingCategoryName, setEditingCategoryName] = useState('');
   const [deletingCategory, setDeletingCategory] = useState(null);
   const [isCategoryActionSubmitting, setIsCategoryActionSubmitting] = useState(false);  
-  const { data: products = [], isLoading: productsLoading, isError: productsQueryError, error: productsError, refetch: refetchProducts } = useQuery({ queryKey: ['admin-products'], queryFn: () => getProducts(), retry: 1 });
+  const { data: products = [], isLoading: productsLoading, isError: productsQueryError, error: productsError, refetch: refetchProducts } = useQuery({ queryKey: ['admin-products'], queryFn: () => getProducts(), retry: 1, enabled: canFetchDashboardData });  
   const sortedProducts = useMemo(() => [...products].sort((a, b) => a.name.localeCompare(b.name)), [products]);
 
   const openAddModal = () => { setModalMode('add'); setActiveProduct(null); setIsModalOpen(true); };
