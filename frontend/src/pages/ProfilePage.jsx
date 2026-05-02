@@ -32,7 +32,7 @@ function EditProfileForm({ profile, onSaved }) {
   const [errors, setErrors] = useState({});
 
   const updateMutation = useMutation({
-    mutationFn: (payload) => api.put('/auth/profile/', payload),
+    mutationFn: (payload) => api.patch('/auth/profile/', payload),
     onSuccess: (res) => {
       onSaved(res.data);
       setForm({
