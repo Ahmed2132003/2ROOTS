@@ -15,7 +15,13 @@ function normalizeOrder(order) {
     tax: Number(order.tax || 0),
     discount: Number(order.discount || 0),
     createdAt: order.created_at,
-    products: items.map((item) => ({ id: item.id, name: item.product_name, quantity: item.quantity, price: Number(item.price_at_order || 0) })),
+    products: items.map((item) => ({
+      id: item.id,
+      name: item.product_name,
+      quantity: item.quantity,
+      price: Number(item.price_at_order || 0),
+      image: item.image || item.product_image || item.image_url || '',
+    })),
   };
 }
 

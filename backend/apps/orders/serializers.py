@@ -5,10 +5,16 @@ from apps.cart.models import Cart
 
 class OrderItemSerializer(serializers.ModelSerializer):
     subtotal = serializers.ReadOnlyField()
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        variant = getattr(obj, 'variant', None)
+        product = getattr(variant, 'product', None)
+        return product.main_image if product else None
 
     class Meta:
         model  = OrderItem
-        fields = ['id', 'product_name', 'variant_name', 'price_at_order', 'quantity', 'subtotal']
+        fields = ['id', 'product_name', 'variant_name', 'price_at_order', 'quantity', 'subtotal', 'image']
 
 
 class OrderStatusHistorySerializer(serializers.ModelSerializer):
