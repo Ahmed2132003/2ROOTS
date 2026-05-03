@@ -525,3 +525,56 @@
     grid-column: auto;
   }
 }
+.invoice-logo {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.invoice-branding {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.invoice-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+@media print {
+  .no-print,
+  nav,
+  aside[aria-label="sidebar"] {
+    display: none !important;
+  }
+
+  .invoice-page,
+  .invoice-print-area,
+  .orders-stack,
+  .orders-card {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .invoice-page {
+    display: block !important;
+  }
+
+  .orders-details-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .orders-table {
+    min-width: 0 !important;
+  }
+
+  .orders-btn {
+    display: none !important;
+  }
+}
