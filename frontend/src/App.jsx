@@ -66,8 +66,11 @@ export default function App() {
         if (mounted) {
           setUser(response.data);
         }
-      } catch {
-        if (mounted) {
+      } catch (error) {
+        const status = error?.response?.status;
+        const shouldLogout = status === 401 || status === 403;
+
+        if (mounted && shouldLogout) {          
           clearTokens();
           clearAuth();
         }
@@ -86,7 +89,7 @@ export default function App() {
   if (!isAuthReady) {
     return <div aria-busy="true" />;
   }
-  
+
   return (
     <BrowserRouter>
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

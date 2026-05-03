@@ -161,19 +161,31 @@ export default function Login() {
       email:    form.email,
       password: form.password,
     }),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {      
       const { access, refresh } = res.data;
       persistTokens({ access, refresh });
       
-      // Fetch user profile
-      api.get('/auth/profile/').then(r => {
-        setUser(r.data);
+      try {
+        const profileResponse = await api.get('/auth/profile/');
+        setUser(profileResponse.data);        
         navigate(from, { replace: true });
-      });
+      } catch (error) {
+        const status = error?.response?.status;
+        const fallback = isRTL
+          ? 'تم تسجيل الدخول لكن تعذر تحميل الحساب حالياً. حاول مرة أخرى.'
+          : 'Logged in, but failed to load your profile right now. Please try again.';
+        const msg = status >= 500
+          ? (isRTL ? 'الخادم غير متاح حالياً. حاول بعد قليل.' : 'Server is temporarily unavailable. Please try again shortly.')
+          : (error?.response?.data?.detail || fallback);
+
+        setErrors({ general: msg });
+      }      
     },
     onError: (err) => {
-      const msg = err.response?.data?.detail
-        || (isRTL ? 'بيانات غير صحيحة' : 'Invalid credentials');
+      const status = err?.response?.status;
+      const msg = status >= 500
+        ? (isRTL ? 'الخادم غير متاح حالياً. حاول بعد قليل.' : 'Server is temporarily unavailable. Please try again shortly.')
+        : (err?.response?.data?.detail || (isRTL ? 'بيانات غير صحيحة' : 'Invalid credentials'));        
       setErrors({ general: msg });
     },
   });
