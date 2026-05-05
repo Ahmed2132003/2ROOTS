@@ -6,6 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from apps.orders.models import Order
 from apps.products.models import Product, Stock
+from apps.users.models import CustomerAccount
 
 User = get_user_model()
 
@@ -39,12 +40,9 @@ class DashboardStatsView(APIView):
         shipping_last_month = sum(o.shipping_fee for o in orders_last_month)
         
         # ─── Customers ────────────────────────────────
-        total_customers     = User.objects.filter(role='customer').count()
-        new_customers_month = User.objects.filter(
-            role='customer',
-            created_at__gte=this_month
-        ).count()
-
+        total_customers     = CustomerAccount.objects.count()
+        new_customers_month = CustomerAccount.objects.filter(created_at__gte=this_month).count()
+        
         # ─── Products ─────────────────────────────────
         total_products   = Product.objects.filter(is_active=True).count()
         low_stock_count  = Stock.objects.filter(

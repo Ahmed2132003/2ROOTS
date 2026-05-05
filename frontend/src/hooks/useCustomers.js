@@ -4,7 +4,7 @@ import api from '../services/api';
 function normalizeCustomer(customer) {
   return {
     ...customer,
-    fullName: customer.username || customer.email?.split('@')[0] || 'Unknown',
+    fullName: customer.name || customer.username || customer.email?.split('@')[0] || 'Unknown',    
     createdAt: customer.created_at,
     totalOrders: Number(customer.total_orders || 0),
     totalSpent: Number(customer.total_spent || 0),

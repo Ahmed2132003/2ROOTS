@@ -10,8 +10,8 @@ export default function CustomersTable({ customers, loading }) {
   if (!customers.length) return <div className="orders-empty">No customers found. Adjust your search term.</div>;
 
   return (
-    <div className="orders-table-wrap"><table className="orders-table"><thead><tr><th>Customer Name</th><th>Email</th><th>Phone</th><th>Number of Orders</th><th>Total Spent</th><th>Created At</th><th>Actions</th></tr></thead><tbody>
-      {customers.map((customer) => <tr key={customer.id}><td><strong>{customer.fullName}</strong></td><td>{customer.email || '-'}</td><td>{customer.phone || '-'}</td><td>{customer.totalOrders}</td><td>{formatMoney(customer.totalSpent)}</td><td className="orders-muted">{formatDate(customer.createdAt)}</td><td><Link to={`/dashboard/customers/${customer.id}`} className="orders-link">View Details</Link></td></tr>)}
+    <div className="orders-table-wrap"><table className="orders-table"><thead><tr><th>Customer Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Number of Orders</th><th>Total Spent</th><th>Created At</th><th>Actions</th></tr></thead><tbody>
+      {customers.map((customer) => <tr key={customer.id}><td><strong>{customer.fullName}</strong></td><td>{customer.email || '-'}</td><td>{customer.phone || '-'}</td><td>{customer.address || '-'}</td><td>{customer.totalOrders}</td><td>{formatMoney(customer.totalSpent)}</td><td className="orders-muted">{formatDate(customer.createdAt)}</td><td><Link to={`/dashboard/customers/${customer.id}`} className="orders-link">View Details</Link></td></tr>)}      
     </tbody></table></div>
   );
 }

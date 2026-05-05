@@ -5,7 +5,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer, ChangePasswordSerializer
+from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer, ChangePasswordSerializer, CustomerAccountSerializer
+from .models import CustomerAccount
 
 User = get_user_model()
 
@@ -80,17 +81,20 @@ class IsAdminOrStaff(permissions.BasePermission):
 
 class AdminCustomerListView(generics.ListAPIView):
     """GET — قائمة كل العملاء"""
-    serializer_class = UserSerializer
+    serializer_class = CustomerAccountSerializer    
     permission_classes = [IsAdminOrStaff]
 
     def get_queryset(self):
-        qs = User.objects.filter(role='customer').select_related('profile')
-
+        qs = CustomerAccount.objects.all().annotate(
+            total_orders=models.Count('orders'),
+            total_spent=models.Sum('orders__total')
+        )
+        
         search = self.request.query_params.get('search')
         if search:
             qs = qs.filter(
                 models.Q(email__icontains=search) |
-                models.Q(username__icontains=search) |
+                models.Q(name__icontains=search) |                
                 models.Q(phone__icontains=search)
             )
         return qs
@@ -102,8 +106,8 @@ class AdminCustomerDetailView(generics.RetrieveAPIView):
 
     def get(self, request, pk):
         try:
-            customer = User.objects.get(pk=pk, role='customer')
-        except User.DoesNotExist:
+            customer = CustomerAccount.objects.get(pk=pk)
+        except CustomerAccount.DoesNotExist:            
             return Response(
                 {"detail": "Customer not found."},
                 status=status.HTTP_404_NOT_FOUND
@@ -112,10 +116,10 @@ class AdminCustomerDetailView(generics.RetrieveAPIView):
         from apps.orders.serializers import OrderListSerializer
         from apps.orders.models import Order
 
-        orders = Order.objects.filter(customer=customer)
-
+        orders = Order.objects.filter(customer_account=customer)
+        
         return Response({
-            "customer": UserSerializer(customer).data,
+            "customer": CustomerAccountSerializer(customer).data,            
             "total_orders": orders.count(),
             "total_spent": sum(o.total for o in orders),
             "orders": OrderListSerializer(orders, many=True).data,

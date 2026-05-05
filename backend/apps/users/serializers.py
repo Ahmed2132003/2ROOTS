@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import CustomerProfile
+from .models import CustomerAccount
 
 User = get_user_model()
 
@@ -71,3 +72,12 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
         user.save()
+
+
+class CustomerAccountSerializer(serializers.ModelSerializer):
+    total_orders = serializers.IntegerField(read_only=True)
+    total_spent = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True, required=False)
+
+    class Meta:
+        model = CustomerAccount
+        fields = ['id', 'name', 'email', 'phone', 'address', 'created_at', 'total_orders', 'total_spent']

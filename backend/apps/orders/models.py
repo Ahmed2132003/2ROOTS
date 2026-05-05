@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from apps.products.models import ProductVariant
+from apps.users.models import CustomerAccount
 
 
 class ShippingRegion(models.Model):
@@ -30,7 +31,14 @@ class Order(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name='orders'
     )
-
+    customer_account = models.ForeignKey(
+        CustomerAccount,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders'
+    )
+    
     # Snapshot من بيانات العميل وقت الطلب
     # (لأن العميل ممكن يغير بياناته بعدين)
     shipping_name    = models.CharField(max_length=200)
