@@ -7,7 +7,7 @@ import './i18n';
 
 // Layout
 import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
+import Footer from './components/Footer';
 
 // Pages
 import Home from './pages/Home';
