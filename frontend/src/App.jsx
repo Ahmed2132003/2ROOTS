@@ -92,7 +92,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div dir="auto" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>        
         <Navbar />
         <main style={{ flex: 1 }}>
           <Routes>
