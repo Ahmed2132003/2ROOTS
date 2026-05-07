@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion as Motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -162,7 +162,7 @@ export default function Checkout() {
 
   const items = cart?.items || [];
   const subtotal = Number(cart?.total_price || 0);
-  const [selectedRegionId] = useState(() => localStorage.getItem('selected_shipping_region') || '');
+  const [selectedRegionId, setSelectedRegionId] = useState(() => localStorage.getItem('selected_shipping_region') || '');  
   const { data: regionsData } = useQuery({
     queryKey: ['shipping-regions'],
     queryFn: () => api.get('/orders/shipping-regions/').then((res) => res.data),
@@ -171,7 +171,13 @@ export default function Checkout() {
     ? regionsData
     : Array.isArray(regionsData?.results)
       ? regionsData.results
-      : [];  
+      : [];
+
+  useEffect(() => {
+    localStorage.setItem('selected_shipping_region', selectedRegionId);
+  }, [selectedRegionId]);
+
+  
   const selectedRegion = regions.find((r) => String(r.id) === String(selectedRegionId));
   const shipping = selectedRegion ? Number(selectedRegion.price) : 0;  
   const grandTotal = subtotal + shipping;
@@ -341,6 +347,31 @@ export default function Checkout() {
 
               <label style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                  {isRTL ? 'المحافظة' : 'Governorate'}
+                </span>
+                <select
+                  value={selectedRegionId || ''}
+                  onChange={(event) => setSelectedRegionId(event.target.value)}
+                  required
+                  style={{
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <option value="">{isRTL ? 'اختر المحافظة' : 'Select Governorate'}</option>
+                  {regions.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
                   {isRTL ? 'ملاحظات (اختياري)' : 'Notes (optional)'}
                 </span>
                 <textarea
@@ -358,6 +389,21 @@ export default function Checkout() {
                 />
               </label>
 
+              {regionsData && regions.length === 0 && (
+                <div
+                  style={{
+                    borderRadius: '12px',
+                    padding: '10px 12px',
+                    background: 'rgba(239,68,68,0.1)',
+                    border: '1px solid rgba(239,68,68,0.4)',
+                    color: 'var(--danger)',
+                    fontSize: '13px',
+                  }}
+                >
+                  {isRTL ? 'تعذر تحميل المحافظات.' : 'Failed to load governorates.'}
+                </div>
+              )}
+              
               {formError && (
                 <div
                   style={{
