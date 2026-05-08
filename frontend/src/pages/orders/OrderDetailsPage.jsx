@@ -1,58 +1,107 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useDeleteOrder, useOrders, useUpdateOrderStatus } from '../../hooks/useOrders';
-import OrderFilters from '../../components/orders/OrderFilters';
-import OrdersPagination from '../../components/orders/OrdersPagination';
-import OrdersTable from '../../components/orders/OrdersTable';
+import { Link, useParams } from 'react-router-dom';
+import { useOrder, useUpdateOrderStatus } from '../../hooks/useOrders';
+import { formatDate, formatMoney } from '../../components/orders/orderUtils';
+import OrderStatusSelect from '../../components/orders/OrderStatusSelect';
+import OrderTimeline from '../../components/orders/OrderTimeline';
+import { downloadInvoicePdf, printInvoice } from '../../components/invoices/invoicePrint';
 import './orders.css';
 
-const DEFAULT_FILTERS = { search: '', status: 'all', sortBy: 'dateDesc', dateFrom: '', dateTo: '', page: 1, pageSize: 8 };
+function toPrintableInvoice(order) {
+  return {
+    invoiceId: `ORD-${order.id}`,
+    issueDate: order.createdAt,
+    status: order.status,
+    customerName: order.customerName,
+    customerEmail: order.shipping_email || '',
+    customerPhone: order.shipping_phone || '',
+    customerAddress: order.shipping_address || '',
+    subtotal: order.subtotal,
+    shipping: order.shipping,
+    tax: order.tax,
+    total: order.totalPrice,
+    items: (order.products || []).map((item) => ({
+      ...item,
+      productName: item.name,
+      total: Number(item.price || 0) * Number(item.quantity || 0),
+    })),
+  };
+}
 
-export default function OrdersListPage() {
-  const { i18n } = useTranslation();
-  const isRTL = i18n.language === 'ar';
-  const tr = (en, ar) => (isRTL ? ar : en);
-
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [activeAction, setActiveAction] = useState({ type: null, orderId: null });  
-  const queryFilters = useMemo(() => filters, [filters]);
-  const { data, isLoading, isError, error, refetch, isFetching } = useOrders(queryFilters);
-  const deleteOrder = useDeleteOrder();
+export default function OrderDetailsPage() {
+  const { id } = useParams();
+  const { data: order, isLoading, isError, error, refetch } = useOrder(id);
   const updateStatus = useUpdateOrderStatus();
 
-  const handleDelete = async (order) => {    
-    if (!window.confirm(`Delete order #${order.id}?`)) return;
-    setActiveAction({ type: 'delete', orderId: order.id });
-    try {
-      await deleteOrder.mutateAsync(order.id);
-    } finally {
-      setActiveAction({ type: null, orderId: null });
-    }
+  const handleStatusChange = async (nextStatus) => {
+    if (!order || nextStatus === order.status) return;
+    await updateStatus.mutateAsync({ orderId: order.id, status: nextStatus });
   };
 
-  const handleStatus = async (order, status) => {    
-    setActiveAction({ type: 'status', orderId: order.id });
-    try {
-      await updateStatus.mutateAsync({ orderId: order.id, status });
-    } finally {
-      setActiveAction({ type: null, orderId: null });
-    }
-  };
+  if (isLoading) return <section className="orders-page"><p className="orders-refresh">Loading order details...</p></section>;
+  if (isError) return <section className="orders-page"><div className="orders-error" role="alert"><p>{error instanceof Error ? error.message : 'Unable to load order details.'}</p><button type="button" onClick={() => refetch()} className="orders-btn">Retry</button></div></section>;
+  if (!order) return <section className="orders-page"><p className="orders-empty">Order not found.</p></section>;
 
-  const handleNote = async (order, note) => {
-    if (!note?.trim()) return;    
-    setActiveAction({ type: 'note', orderId: order.id });
-    try {
-      await updateStatus.mutateAsync({ orderId: order.id, status: order.status, note });
-    } finally {
-      setActiveAction({ type: null, orderId: null });
-    }
-  };
+  const printableInvoice = toPrintableInvoice(order);
 
-  return (<section className="orders-page"><header className="orders-page__header"><div><h1 className="orders-page__title">{tr('Orders Management', 'إدارة الطلبات')}</h1><p className="orders-page__subtitle">Search, filter, and monitor all order activity.</p></div><div style={{display:'flex',gap:12}}><Link to="/dashboard/orders/new" className="orders-btn orders-btn--primary">New Order</Link><Link to="/dashboard" className="orders-btn">{tr('Back to dashboard', 'العودة للداشبورد')}</Link></div></header>
-    <div className="orders-surface"><OrderFilters filters={filters} onChange={setFilters} /></div>
-    {isFetching && !isLoading && <p className="orders-refresh">Refreshing orders...</p>}
-    {isError ? <div className="orders-error" role="alert"><p>{error instanceof Error ? error.message : 'Unable to load orders.'}</p><button type="button" onClick={() => refetch()} className="orders-btn">{tr('Retry', 'إعادة المحاولة')}</button></div> : <div className="orders-surface"><OrdersTable orders={data?.items || []} loading={isLoading} onDelete={handleDelete} onUpdateStatus={handleStatus} onAddNote={handleNote} activeAction={activeAction} /><OrdersPagination page={filters.page} total={data?.total || 0} pageSize={filters.pageSize} onPageChange={(nextPage) => setFilters((previous) => ({ ...previous, page: Math.max(1, nextPage) }))} /></div>}    
-  </section>);
+  return (
+    <section className="orders-page">
+      <header className="orders-page__header">
+        <div>
+          <h1 className="orders-page__title">Order #{order.id}</h1>
+          <p className="orders-page__subtitle">Customer: {order.customerName}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Link to="/dashboard/orders" className="orders-btn">Back to orders</Link>
+          <button type="button" className="orders-btn" onClick={() => downloadInvoicePdf(printableInvoice)}>Download Invoice</button>
+          <button type="button" className="orders-btn orders-btn--primary" onClick={() => printInvoice(printableInvoice)}>Print Invoice</button>
+        </div>
+      </header>
+
+      <div className="orders-details-grid">
+        <div className="orders-stack">
+          <article className="orders-card">
+            <h2 className="orders-section-title">Order Information</h2>
+            <div className="orders-info-grid">
+              <p><span className="orders-muted">Status:</span> {order.status}</p>
+              <p><span className="orders-muted">Created:</span> {formatDate(order.createdAt)}</p>
+            </div>
+            <OrderTimeline status={order.status} />
+          </article>
+
+          <article className="orders-card">
+            <h2 className="orders-section-title">Items</h2>
+            <div className="orders-table-wrap">
+              <table className="orders-table">
+                <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+                <tbody>
+                  {!order.products?.length ? <tr><td colSpan={4} className="orders-muted" style={{ textAlign: 'center' }}>No items found for this order.</td></tr> : order.products.map((product) => (
+                    <tr key={product.id}><td>{product.name}</td><td>{product.quantity}</td><td>{formatMoney(product.price)}</td><td>{formatMoney(Number(product.price || 0) * Number(product.quantity || 0))}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <aside className="orders-stack">
+          <article className="orders-card">
+            <h2 className="orders-section-title">Update Order</h2>
+            <OrderStatusSelect value={order.status} onChange={handleStatusChange} loading={updateStatus.isPending} />
+          </article>
+
+          <article className="orders-card">
+            <h2 className="orders-section-title">Summary</h2>
+            <div className="orders-price-grid">
+              <div className="orders-row-between"><span className="orders-muted">Subtotal</span><span>{formatMoney(order.subtotal)}</span></div>
+              <div className="orders-row-between"><span className="orders-muted">Shipping</span><span>{formatMoney(order.shipping)}</span></div>
+              <div className="orders-row-between"><span className="orders-muted">Tax</span><span>{formatMoney(order.tax)}</span></div>
+              <div className="orders-row-between"><span className="orders-muted">Discount</span><span>{formatMoney(order.discount)}</span></div>
+              <hr className="orders-divider" />
+              <div className="orders-row-between orders-row-between--strong"><span>Total</span><span>{formatMoney(order.totalPrice)}</span></div>
+            </div>
+          </article>
+        </aside>
+      </div>
+    </section>
+  );
 }

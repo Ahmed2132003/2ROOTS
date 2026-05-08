@@ -577,4 +577,51 @@
   .orders-btn {
     display: none !important;
   }
+
+}
+.order-details-page {
+  gap: 24px;
+}
+
+.order-details-page .orders-page__header {
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.order-details-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.order-details-page__grid {
+  align-items: start;
+  gap: 24px;
+}
+
+.order-details-page .orders-card {
+  padding: 20px;
+}
+
+.order-details-page .orders-table {
+  min-width: 640px;
+}
+
+.order-details-page .orders-section-title {
+  margin-bottom: 12px;
+}
+
+.order-details-page .orders-timeline-grid {
+  margin-top: 14px;
+  gap: 14px;
+}
+
+@media (max-width: 1080px) {
+  .order-details-page {
+    gap: 18px;
+  }
+
+  .order-details-page__grid {
+    gap: 18px;
+  }
 }
