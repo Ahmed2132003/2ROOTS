@@ -253,7 +253,7 @@ export default function ProductFormModal({
                 <FormField label="Hex" id="variant-color-hex">
                   <input id="variant-color-hex" type="color" value={newColor.hexCode} onChange={(event) => setNewColor((prev) => ({ ...prev, hexCode: event.target.value }))} />
                 </FormField>
-                <button type="button" className="product-modal__variant-add" onClick={addColor}>Add Color</button>
+                <button type="button" onClick={addColor}>Add Color</button>
               </div>
               <div className="product-modal__chips">
                 {values.colors.map((color) => <button type="button" key={color.name} onClick={() => removeColor(color.name)}><span style={{ background: color.hexCode }} />{color.name} ×</button>)}
@@ -263,7 +263,7 @@ export default function ProductFormModal({
                 <FormField label="Size" id="variant-size-name">
                   <input id="variant-size-name" value={newSize} onChange={(event) => setNewSize(event.target.value)} placeholder="M or 42" />
                 </FormField>
-                <button type="button" className="product-modal__variant-add" onClick={addSize}>Add Size</button>
+                <button type="button" onClick={addSize}>Add Size</button>
               </div>
               <div className="product-modal__chips">
                 {values.sizes.map((size) => <button type="button" key={size.name} onClick={() => removeSize(size.name)}>{size.name} ×</button>)}
@@ -281,7 +281,7 @@ export default function ProductFormModal({
                         <td><input type="number" min="0" step="0.01" value={variant.price} placeholder="Base" onChange={(event) => updateVariant(index, 'price', event.target.value)} /></td>
                         <td><input type="number" min="0" step="1" value={variant.stock} onChange={(event) => updateVariant(index, 'stock', event.target.value)} /></td>
                         <td><input value={variant.sku} onChange={(event) => updateVariant(index, 'sku', event.target.value)} placeholder="SKU-001" /></td>
-                        <td><button type="button" className="product-modal__variant-remove" onClick={() => removeVariant(index)}>Delete</button></td>
+                        <td><button type="button" className="danger" onClick={() => removeVariant(index)}>Delete</button></td>
                       </tr>
                     ))}
                   </tbody>
