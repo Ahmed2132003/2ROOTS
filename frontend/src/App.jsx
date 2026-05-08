@@ -95,8 +95,8 @@ export default function App() {
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>        
         <Navbar />
         <main style={{ flex: 1 }}>
-          <Suspense fallback={<div className="app-loading-spinner" role="status" aria-live="polite">Loading…</div>}></Suspense>
-          <Routes>
+          <Suspense fallback={<div className="app-loading-spinner" role="status" aria-live="polite">Loading…</div>}>
+            <Routes>            
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />            
             <Route path="/products/:slug" element={<ProductDetail />} />
