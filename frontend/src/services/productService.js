@@ -36,6 +36,12 @@ function mapProduct(product) {
     hasVariants: Boolean(product.has_variants),
     isFeatured: Boolean(product.is_featured),
     isActive: product.is_active !== false,
+    stockStatus: product.stock_status || 'in_stock',
+    discountType: product.discount_type || 'none',
+    discountValue: parseNumber(product.discount_value, 0),
+    discountActive: Boolean(product.discount_active),
+    discountedPrice: product.discounted_price == null ? null : parseNumber(product.discounted_price, 0),
+    discountPercentage: parseNumber(product.discount_percentage, 0),
     variants: Array.isArray(product.variants) ? product.variants : [],
   };
 }
@@ -64,10 +70,13 @@ function buildProductPayload(payload) {
     has_variants: Boolean(payload.hasVariants),
     is_active: payload.isActive !== false,
     is_featured: Boolean(payload.isFeatured),
+    stock_status: payload.stockStatus || 'in_stock',
+    discount_type: payload.discountType || 'none',
+    discount_value: payload.discountType && payload.discountType !== 'none' ? parseNumber(payload.discountValue, 0) : 0,
+    discount_active: Boolean(payload.discountActive),
     ...(payload.hasVariants ? { variants: (payload.variants || []).map(buildVariantPayload) } : {}),
   };
 }
-
 
 async function syncSimpleVariantStock(productId, payload, existingVariants = []) {
   if (payload.hasVariants) return;
@@ -180,6 +189,35 @@ export async function deleteProductImage(productId, imageId) {
   return { success: true };
 }
 
-export async function createCategory(payload) { const r = await apiClient.post('/products/admin/categories/', payload); return r.data; }
-export async function updateCategory(id, payload) { const r = await apiClient.patch(`/products/admin/categories/${id}/`, payload); return r.data; }
-export async function deleteCategory(id) { await apiClient.delete(`/products/admin/categories/${id}/`); return { success: true }; }
+export async function createCategory(payload) {
+  const hasImageFile = payload?.image instanceof File;
+  if (hasImageFile) {
+    const formData = new FormData();
+    formData.append('name', payload.name || '');
+    formData.append('is_active', String(payload.is_active !== false));
+    formData.append('image', payload.image);
+    const r = await apiClient.post('/products/admin/categories/', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return r.data;
+  }
+  const r = await apiClient.post('/products/admin/categories/', payload);
+  return r.data;
+}
+
+export async function updateCategory(id, payload) {
+  const hasImageFile = payload?.image instanceof File;
+  if (hasImageFile) {
+    const formData = new FormData();
+    if (payload.name != null) formData.append('name', payload.name);
+    if (payload.is_active != null) formData.append('is_active', String(payload.is_active));
+    formData.append('image', payload.image);
+    const r = await apiClient.patch(`/products/admin/categories/${id}/`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return r.data;
+  }
+  const r = await apiClient.patch(`/products/admin/categories/${id}/`, payload);
+  return r.data;
+}
+
+export async function deleteCategory(id) {
+  await apiClient.delete(`/products/admin/categories/${id}/`);
+  return { success: true };
+}

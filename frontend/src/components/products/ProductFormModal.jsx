@@ -9,6 +9,10 @@ const defaultFormValues = {
   hasVariants: false,
   isFeatured: false,
   isActive: true,
+  stockStatus: 'in_stock',
+  discountType: 'none',
+  discountValue: '',
+  discountActive: false,  
   imageFile: null,
   imageFiles: [],
   colors: [],
@@ -67,6 +71,10 @@ function getInitialValues(initialProduct) {
     hasVariants: Boolean(initialProduct.hasVariants),
     isFeatured: Boolean(initialProduct.isFeatured),
     isActive: initialProduct.isActive !== false,
+    stockStatus: initialProduct.stockStatus || 'in_stock',
+    discountType: initialProduct.discountType || 'none',
+    discountValue: initialProduct.discountValue != null ? String(initialProduct.discountValue) : '',
+    discountActive: Boolean(initialProduct.discountActive),    
     imageFile: null,
     imageFiles: [],
     colors,
@@ -209,6 +217,10 @@ export default function ProductFormModal({
             <span>This product has variants (colors, sizes)</span>
             <input id="has-variants" type="checkbox" checked={values.hasVariants} onChange={(event) => setHasVariants(event.target.checked)} />
           </label>
+          <label className="product-modal__field product-modal__field--toggle" htmlFor="discount-active">
+            <span>Discount active</span>
+            <input id="discount-active" type="checkbox" checked={values.discountActive} onChange={(event) => handleChange('discountActive', event.target.checked)} />
+          </label>
 
           <FormField label="Product Name" id="product-name" error={errors.name}>
             <input id="product-name" type="text" value={values.name} onChange={(event) => handleChange('name', event.target.value)} placeholder="Enter product name" />
@@ -236,7 +248,27 @@ export default function ProductFormModal({
               </FormField>
             )}
           </div>
-
+          <div className="product-modal__row">
+            <FormField label="Stock Status" id="product-stock-status">
+              <select id="product-stock-status" value={values.stockStatus} onChange={(event) => handleChange('stockStatus', event.target.value)}>
+                <option value="in_stock">In Stock</option>
+                <option value="low_stock">Low Stock</option>
+                <option value="sold_out">Sold Out</option>
+              </select>
+            </FormField>
+            <FormField label="Discount Type" id="product-discount-type">
+              <select id="product-discount-type" value={values.discountType} onChange={(event) => handleChange('discountType', event.target.value)}>
+                <option value="none">None</option>
+                <option value="percentage">Percentage (%)</option>
+                <option value="fixed">Fixed Amount</option>
+              </select>
+            </FormField>
+            {values.discountType !== 'none' && (
+              <FormField label="Discount Value" id="product-discount-value">
+                <input id="product-discount-value" type="number" min="0" step="0.01" value={values.discountValue} onChange={(event) => handleChange('discountValue', event.target.value)} />
+              </FormField>
+            )}
+          </div>
           <FormField label={values.hasVariants ? 'Upload Images' : 'Upload Image'} id="product-image-upload">
             <input id="product-image-upload" type="file" accept="image/*" multiple={values.hasVariants} onChange={handleImageChange} />
             {imageFileName && <small className="product-modal__hint">Selected: {imageFileName}</small>}

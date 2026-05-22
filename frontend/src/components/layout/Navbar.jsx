@@ -77,18 +77,27 @@ export default function Navbar() {
         borderBottom: scrolled ? '1px solid var(--border)' : 'none',
       }}>
         <div className="nav-inner">
-          {/* ── LOGO (Phase 5: image instead of emoji+text) ── */}
-          <Link to="/" className="nav-logo" onClick={closeMenus} style={{ display: 'flex', alignItems: 'center' }}>
-            <img
-              src="/shark-logo.png"
-              alt="Shark"
-              style={{
-                height: '38px',
-                width: 'auto',
-                objectFit: 'contain',
-                filter: theme === 'light' ? 'invert(1)' : 'none',
-              }}
-            />
+          {/* Logo text-only for cleaner header alignment */}
+          <Link
+            to="/"
+            className="nav-logo"
+            onClick={closeMenus}
+            aria-label={isRTL ? 'شارك - الرئيسية' : 'Shark - Home'}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              lineHeight: 1,
+              fontWeight: 800,
+              letterSpacing: '-0.2px',
+              textDecoration: 'none',
+              color: 'var(--text-primary)',
+              marginInlineEnd: '6px',
+              minHeight: '40px',
+            }}
+          >
+            <span style={{ fontFamily: "'Cairo', 'Syne', sans-serif" }}>{isRTL ? 'شارك' : 'Shark'}</span>
           </Link>
 
           <div className="desktop-nav">

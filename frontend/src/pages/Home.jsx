@@ -106,6 +106,12 @@ function HeroSection({ t, isRTL }) {
         <Motion.div variants={stagger} initial="hidden" animate="visible">
 
           {/* Badge */}
+          {hasDiscount && !isSoldOut && (
+            <div style={{ position: 'absolute', top: product.is_featured ? '44px' : '12px', left: '12px', background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', fontWeight: 800 }}>
+              -{discountPct}%
+            </div>
+          )}
+
           <Motion.div variants={fadeUp} custom={0} style={{            
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             background: 'var(--accent-glow)',
@@ -156,7 +162,12 @@ function HeroSection({ t, isRTL }) {
           <Motion.div variants={fadeUp} custom={3}
             style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <Link to="/products" style={{ textDecoration: 'none' }}>
-              <Motion.button
+              {hasDiscount && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through', marginInlineEnd: '8px' }}>
+                {Number(product.base_price).toLocaleString()} {t('common.egp')}
+              </div>
+            )}
+            <Motion.button              
                 whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(108,99,255,0.4)' }}
                 whileTap={{ scale: 0.97 }}
                 style={{
@@ -172,7 +183,12 @@ function HeroSection({ t, isRTL }) {
             </Link>
 
             <Link to="/products" style={{ textDecoration: 'none' }}>
-              <Motion.button
+              {hasDiscount && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through', marginInlineEnd: '8px' }}>
+                {Number(product.base_price).toLocaleString()} {t('common.egp')}
+              </div>
+            )}
+            <Motion.button              
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.97 }}
                 style={{
@@ -232,6 +248,10 @@ function HeroSection({ t, isRTL }) {
 }
 
 
+  const [imgError, setImgError] = useState(false);
+  const categoryImage = resolveProductImageUrl(cat?.image_url || cat?.image || '');
+  const showCategoryImage = Boolean(categoryImage) && !imgError && categoryImage !== FALLBACK_IMAGE;
+  
 function CategoryCard({ cat, index }) {
   return (
     <Motion.div
@@ -249,11 +269,20 @@ function CategoryCard({ cat, index }) {
     >
       <Link to={`/products?category=${cat.slug}`} style={{ textDecoration: 'none' }}>
         <div style={{
-          height: '50%',
-          background: 'linear-gradient(135deg, var(--accent-glow), var(--bg-hover))',
+          height: '55%',
+          background: showCategoryImage ? '#0f1020' : 'linear-gradient(135deg, var(--accent-glow), var(--bg-hover))',          
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '16px',
-        }}>          
+        }}>      
+          {showCategoryImage ? (
+            <img
+              src={categoryImage}
+              alt={cat.name}
+              loading="lazy"
+              onError={() => setImgError(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.92, transition: 'transform 0.4s ease' }}
+            />
+          ) : (    
           <div style={{
             fontSize: 'clamp(18px, 2.2vw, 26px)',
             fontWeight: 500,
@@ -270,6 +299,7 @@ function CategoryCard({ cat, index }) {
           }}>
             🦈 SHARK            
           </div>
+          )}
         </div>        
         <div style={{ padding: '16px' }}>
           <div style={{
@@ -309,6 +339,9 @@ function ProductCard({ product, index, t, onAddToCart }) {
     }
     return product?.main_image || product?.image || product?.imageUrl || '';
   }, [product]);
+  const isSoldOut = product.is_sold_out || product.stock_status === 'sold_out' || !product.in_stock;
+  const hasDiscount = product.discount_is_active && product.discounted_price != null;
+  const discountPct = Number(product.discount_percentage || 0);
 
   const imageSrc = useMemo(() => {
     if (imageError) return FALLBACK_IMAGE;
@@ -332,6 +365,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
         overflow: 'hidden',
         position: 'relative',
         transition: 'border-color 0.3s',
+        opacity: isSoldOut ? 0.78 : 1,
       }}
     >
       <Link to={`/products/${product.slug}`} style={{ textDecoration: 'none' }}>
@@ -358,6 +392,11 @@ function ProductCard({ product, index, t, onAddToCart }) {
           )}
 
           {/* Badge */}
+          {hasDiscount && !isSoldOut && (
+            <div style={{ position: 'absolute', top: product.is_featured ? '44px' : '12px', left: '12px', background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', fontWeight: 800 }}>
+              -{discountPct}%
+            </div>
+          )}
           {product.is_featured && (
             <div style={{
               position: 'absolute', top: '12px', left: '12px',
@@ -371,14 +410,14 @@ function ProductCard({ product, index, t, onAddToCart }) {
           )}
 
           {/* Out of Stock */}
-          {!product.in_stock && (
+          {isSoldOut && (            
             <div style={{
               position: 'absolute', inset: 0,
               background: 'rgba(0,0,0,0.5)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white', fontWeight: 700, fontSize: '16px',
             }}>
-              {t('products.out_of_stock')}
+              Sold Out              
             </div>
           )}
         </div>
@@ -408,13 +447,18 @@ function ProductCard({ product, index, t, onAddToCart }) {
               background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
             }}>
-              {Number(product.base_price).toLocaleString()} {t('common.egp')}
+              {hasDiscount ? Number(product.discounted_price).toLocaleString() : Number(product.base_price).toLocaleString()} {t('common.egp')}              
             </div>
+            {hasDiscount && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through', marginInlineEnd: '8px' }}>
+                {Number(product.base_price).toLocaleString()} {t('common.egp')}
+              </div>
+            )}
             <Motion.button            
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleAddToCart}
-              disabled={!product.in_stock}
+              disabled={isSoldOut}              
               style={{
                 width: '36px', height: '36px',
                 background: 'var(--accent-glow)',
@@ -422,8 +466,8 @@ function ProductCard({ product, index, t, onAddToCart }) {
                 borderRadius: '10px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '16px',
-                cursor: product.in_stock ? 'pointer' : 'not-allowed',
-                opacity: product.in_stock ? 1 : 0.65,
+                cursor: isSoldOut ? 'not-allowed' : 'pointer',
+                opacity: isSoldOut ? 0.55 : 1,                
               }}
             >
               🛒
@@ -589,7 +633,12 @@ export default function Home() {
                 </h2>
               </div>
               <Link to="/products" style={{ textDecoration: 'none' }}>
-                <Motion.button
+                {hasDiscount && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through', marginInlineEnd: '8px' }}>
+                {Number(product.base_price).toLocaleString()} {t('common.egp')}
+              </div>
+            )}
+            <Motion.button                
                   whileHover={{ x: isRTL ? -4 : 4 }}
                   style={{
                     background: 'transparent',
@@ -617,7 +666,7 @@ export default function Home() {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
                 gap: '24px',
-              }}>
+              >                
                 {featuredList.map((product, i) => (                  
                   <ProductCard key={product.id} product={product} index={i} t={t} onAddToCart={handleAddToCart} />                  
                 ))}
@@ -669,7 +718,12 @@ export default function Home() {
                 {t('home.hero_subtitle')}
               </p>
               <Link to="/products" style={{ textDecoration: 'none' }}>
-                <Motion.button
+                {hasDiscount && (
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through', marginInlineEnd: '8px' }}>
+                {Number(product.base_price).toLocaleString()} {t('common.egp')}
+              </div>
+            )}
+            <Motion.button                
                   whileHover={{ scale: 1.05, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
                   whileTap={{ scale: 0.97 }}
                   style={{

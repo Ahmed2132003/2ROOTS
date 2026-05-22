@@ -31,8 +31,10 @@ export default function Dashboard() {
   const [activeProduct, setActiveProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categoryName, setCategoryName] = useState('');
+  const [categoryImageFile, setCategoryImageFile] = useState(null);  
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingCategoryName, setEditingCategoryName] = useState('');
+  const [editingCategoryImageFile, setEditingCategoryImageFile] = useState(null);  
   const [deletingCategory, setDeletingCategory] = useState(null);
   const [isCategoryActionSubmitting, setIsCategoryActionSubmitting] = useState(false);
   const { data: products = [], isLoading: productsLoading, isError: productsQueryError, error: productsError, refetch: refetchProducts } = useQuery({ queryKey: ['admin-products'], queryFn: () => getProducts(), retry: 1, enabled: canFetchDashboardData });
@@ -42,13 +44,28 @@ export default function Dashboard() {
   const openEditModal = (product) => { setModalMode('edit'); setActiveProduct(product); setIsModalOpen(true); };
   const closeModal = () => { if (!isSubmitting) setIsModalOpen(false); };
 
-  const handleAddCategory = async () => { if (!categoryName.trim()) return; await createCategory({ name: categoryName.trim(), is_active: true }); setCategoryName(''); await refetchCategories(); };
-  const openEditCategory = (category) => { setEditingCategory(category); setEditingCategoryName(category.name); setDeletingCategory(null); };
-  const cancelEditCategory = () => { if (isCategoryActionSubmitting) return; setEditingCategory(null); setEditingCategoryName(''); };
+  const handleAddCategory = async () => {
+    if (!categoryName.trim()) return;
+    await createCategory({ name: categoryName.trim(), is_active: true, image: categoryImageFile || undefined });
+    setCategoryName('');
+    setCategoryImageFile(null);
+    await refetchCategories();
+  };
+  const openEditCategory = (category) => { setEditingCategory(category); setEditingCategoryName(category.name); setEditingCategoryImageFile(null); setDeletingCategory(null); };
+  const cancelEditCategory = () => { if (isCategoryActionSubmitting) return; setEditingCategory(null); setEditingCategoryName(''); setEditingCategoryImageFile(null); };
+
   const handleEditCategory = async () => {
     if (!editingCategory || !editingCategoryName.trim()) return;
     setIsCategoryActionSubmitting(true);
-    try { await updateCategory(editingCategory.id, { name: editingCategoryName.trim() }); setEditingCategory(null); setEditingCategoryName(''); await refetchCategories(); }
+  const handleAddCategory = async () => {
+    if (!categoryName.trim()) return;
+    await createCategory({ name: categoryName.trim(), is_active: true, image: categoryImageFile || undefined });
+    setCategoryName('');
+    setCategoryImageFile(null);
+    await refetchCategories();
+  };
+  const openEditCategory = (category) => { setEditingCategory(category); setEditingCategoryName(category.name); setEditingCategoryImageFile(null); setDeletingCategory(null); };
+  const cancelEditCategory = () => { if (isCategoryActionSubmitting) return; setEditingCategory(null); setEditingCategoryName(''); setEditingCategoryImageFile(null); };    
     finally { setIsCategoryActionSubmitting(false); }
   };
   const openDeleteCategory = (category) => { setDeletingCategory(category); setEditingCategory(null); };
@@ -76,8 +93,8 @@ export default function Dashboard() {
 
   const handleDeleteProduct = async (product) => {
     if (!window.confirm(`Delete ${product.name}? This action cannot be undone.`)) return;
-    try { await deleteProduct(product.id); await refetchProducts(); setFeedback({ type: 'success', message: 'Product deleted successfully.' }); }
-    catch (deleteError) { setFeedback({ type: 'error', message: deleteError instanceof Error ? deleteError.message : 'Unable to delete product.' }); }
+    <section className="products-management"><header className="products-management__header"><div><h2>Categories Management</h2><p>Create/edit categories used by product form.</p></div><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><input value={categoryName} onChange={(e) => setCategoryName(e.target.value)} placeholder="Category name" className="orders-input" /><input type="file" accept="image/*" onChange={(e) => setCategoryImageFile(e.target.files?.[0] || null)} className="orders-input" /><button type="button" onClick={handleAddCategory}>Add Category</button></div></header><div className="orders-surface">{(categories || []).map((cat) => <div key={cat.id} className="categories-management__row"><span>{cat.name}</span><div className="categories-management__actions"><button type="button" className="categories-management__action" onClick={() => openEditCategory(cat)}>Edit</button><button type="button" className="categories-management__action categories-management__action--danger" onClick={() => openDeleteCategory(cat)}>Delete</button></div></div>)}
+      {editingCategory && <article className="categories-management__panel" aria-live="polite"><header><h3>Edit Category</h3><p>Update the selected category name using the native dashboard form.</p></header><div className="categories-management__panel-content"><input value={editingCategoryName} onChange={(event) => setEditingCategoryName(event.target.value)} className="orders-input" placeholder="Category name" /><input type="file" accept="image/*" onChange={(e) => setEditingCategoryImageFile(e.target.files?.[0] || null)} className="orders-input" /><div className="categories-management__panel-actions"><button type="button" className="ghost categories-management__panel-cancel" onClick={cancelEditCategory} disabled={isCategoryActionSubmitting}>Cancel</button><button type="button" className="categories-management__panel-save" onClick={handleEditCategory} disabled={isCategoryActionSubmitting || !editingCategoryName.trim()}>Save Changes</button></div></div></article>}    
   };
 
   return (<section className="admin-dashboard-overview"><header className="admin-dashboard-overview__header"><div><h1>Dashboard Overview</h1><p>Live admin snapshot for sales, orders, customers, and catalog performance.</p></div><div className="admin-dashboard-overview__quick-links"><Link to="/dashboard/orders" className="admin-dashboard-overview__orders-link">Go to Orders Management</Link><Link to="/dashboard/customers" className="admin-dashboard-overview__orders-link">Go to Customers Management</Link><Link to="/dashboard/invoices" className="admin-dashboard-overview__orders-link">Go to Invoices Management</Link><Link to="/dashboard/shipping" className="admin-dashboard-overview__orders-link">Go to Shipping Management</Link></div></header>  
