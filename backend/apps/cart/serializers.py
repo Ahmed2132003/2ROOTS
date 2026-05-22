@@ -14,7 +14,7 @@ class CartProductVariantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductVariant
-        fields = ['id', 'name', 'sku', 'color', 'size', 'price', 'is_active', 'stock', 'product']
+        fields = ['id', 'name', 'sku', 'color', 'size', 'price', 'effective_price', 'is_active', 'stock', 'product']        
 
 
 class CartItemSerializer(serializers.ModelSerializer):

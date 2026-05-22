@@ -423,9 +423,11 @@ export default function ProductDetail() {
     || product?.variants?.[0]
     || null;
   const maxQty    = selectedVariant?.stock?.quantity || 1;
-  const canAdd    = selectedVariant?.stock?.is_available && quantity > 0;
-  const price     = selectedVariant?.price || product?.base_price;
-
+  const isProductSoldOut = Boolean(product?.is_sold_out || product?.stock_status === 'sold_out');
+  const canAdd    = Boolean(selectedVariant?.stock?.is_available && quantity > 0 && !isProductSoldOut);
+  const basePrice = Number(selectedVariant?.price ?? product?.base_price ?? 0);
+  const effectivePrice = Number(selectedVariant?.effective_price ?? product?.discounted_price ?? basePrice);
+  const hasDiscount = effectivePrice < basePrice;
   return (
     <div style={{ minHeight: '100vh', padding: '40px 5%' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -510,7 +512,7 @@ export default function ProductDetail() {
                   FEATURED
                 </span>
               )}
-              {!product?.in_stock && (
+              {(isProductSoldOut || !product?.in_stock) && (                
                 <span style={{
                   background: 'var(--danger)', color: 'white',
                   borderRadius: '8px', padding: '3px 12px',
@@ -539,12 +541,23 @@ export default function ProductDetail() {
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                 lineHeight: 1,
               }}>
-                {Number(price).toLocaleString()}
+                {effectivePrice.toLocaleString()}                
                 <span style={{ fontSize: '20px', marginInlineStart: '8px' }}>
                   {t('common.egp')}
                 </span>
               </div>
 
+              {hasDiscount && (
+                <div style={{
+                  marginTop: '10px',
+                  color: 'var(--text-muted)',
+                  textDecoration: 'line-through',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                }}>
+                  {basePrice.toLocaleString()} {t('common.egp')}
+                </div>
+              )}
               {/* Stock Status */}
               {selectedVariant && (
                 <Motion.div
@@ -565,7 +578,9 @@ export default function ProductDetail() {
                     width: '8px', height: '8px', borderRadius: '50%',
                     background: 'currentColor',
                   }} />
-                  {selectedVariant.stock?.is_available
+                  {isProductSoldOut
+                    ? (isRTL ? 'نفدت الكمية (Sold Out)' : 'Sold Out')
+                    : selectedVariant.stock?.is_available                  
                     ? selectedVariant.stock?.is_low_stock
                       ? `${isRTL ? 'كمية محدودة' : 'Low stock'} — ${selectedVariant.stock.quantity} ${isRTL ? 'متبقي' : 'left'}`
                       : isRTL ? 'متاح' : 'In Stock'

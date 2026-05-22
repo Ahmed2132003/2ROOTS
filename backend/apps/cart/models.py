@@ -62,8 +62,8 @@ class CartItem(models.Model):
 
     @property
     def subtotal(self):
-        return self.variant.price * self.quantity
-
+        return self.variant.effective_price * self.quantity
+    
     @property
     def is_available(self):
         """تأكد إن الكمية المطلوبة موجودة في الـ Stock"""

@@ -145,7 +145,7 @@ class CreateOrderSerializer(serializers.Serializer):
                 variant=item.variant,
                 product_name=item.variant.product.name,
                 variant_name=item.variant.name,
-                price_at_order=item.variant.price,
+                price_at_order=item.variant.effective_price,                
                 quantity=item.quantity,
             )
             stock = item.variant.stock

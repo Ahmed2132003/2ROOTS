@@ -215,7 +215,7 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
           fontSize: '13px', color: 'var(--text-muted)',
           fontWeight: 500,
         }}>
-          {Number(item.variant?.price).toLocaleString()} × {qty}
+          {Number(item.variant?.effective_price ?? item.variant?.price ?? 0).toLocaleString()} × {qty}          
         </div>
 
               <Motion.button                 
