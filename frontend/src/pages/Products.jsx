@@ -150,7 +150,9 @@ function ProductCard({ product, index, t, onAddToCart }) {
                 color: '#fff',
                 borderRadius: '8px',
                 padding: '6px 12px',
-                fontSize: '14px',                
+                fontSize: '13px',                
+                border: '1px solid rgba(255,255,255,0.3)',
+                boxShadow: '0 10px 24px rgba(220,38,38,0.35)',                                
                 fontWeight: 800,
               }}
             >
@@ -218,8 +220,9 @@ function ProductCard({ product, index, t, onAddToCart }) {
             <div>
               <div
                 style={{
-                  fontSize: '20px',
-                  fontWeight: 800,
+                  fontSize: '22px',
+                  lineHeight: 1.1,
+                  fontWeight: 900,                  
                   background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -230,7 +233,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
                   : Number(product.base_price).toLocaleString()} {t('common.egp')}
               </div>
               {hasDiscount && (
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through', marginInlineEnd: '8px' }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textDecoration: 'line-through', textDecorationThickness: '1.6px', fontWeight: 600, letterSpacing: '0.15px', marginInlineEnd: '8px' }}>                  
                   {Number(product.base_price).toLocaleString()} {t('common.egp')}
                 </div>
               )}

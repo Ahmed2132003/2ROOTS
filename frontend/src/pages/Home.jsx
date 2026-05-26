@@ -366,7 +366,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
 
           {/* Badge */}
           {hasDiscount && !isSoldOut && (
-            <div style={{ position: 'absolute', top: product.is_featured ? '44px' : '12px', left: '12px', background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', borderRadius: '8px', padding: '4px 10px', fontSize: '11px', fontWeight: 800 }}>
+            <div style={{ position: 'absolute', top: product.is_featured ? '44px' : '12px', left: '12px', background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', borderRadius: '999px', border: '1px solid rgba(255,255,255,0.3)', boxShadow: '0 10px 24px rgba(220,38,38,0.35)', padding: '5px 11px', fontSize: '12px', fontWeight: 800 }}>              
               -{discountPct}%
             </div>
           )}
@@ -413,20 +413,22 @@ function ProductCard({ product, index, t, onAddToCart }) {
           </div>
           <div style={{
             display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'space-between', gap: '10px'            
           }}>
-            <div style={{
-              fontSize: '22px', fontWeight: 800,
-              background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
-              {hasDiscount ? Number(product.discounted_price).toLocaleString() : Number(product.base_price).toLocaleString()} {t('common.egp')}              
-            </div>
-            {hasDiscount && (
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through', marginInlineEnd: '8px' }}>
-                {Number(product.base_price).toLocaleString()} {t('common.egp')}
+            <div style={{ display: 'grid', gap: '3px' }}>
+              <div style={{
+                fontSize: '23px', fontWeight: 900, lineHeight: 1.12,
+                background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}>
+                {hasDiscount ? Number(product.discounted_price).toLocaleString() : Number(product.base_price).toLocaleString()} {t('common.egp')}                              
               </div>
-            )}
+              {hasDiscount && (
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textDecoration: 'line-through', textDecorationThickness: '1.5px', fontWeight: 600, marginInlineEnd: '8px' }}>
+                  {Number(product.base_price).toLocaleString()} {t('common.egp')}
+                </div>
+              )}
+            </div>            
             <Motion.button            
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}

@@ -78,7 +78,7 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
                 ✦ Featured
               </span>
             )}
-            {hasDiscount && !isSoldOut && <DiscountBadge percentage={discountPct} />}
+            {hasDiscount && !isSoldOut && <DiscountBadge percentage={discountPct} style={{ borderRadius: '999px', padding: '5px 12px', fontSize: '12px', boxShadow: '0 8px 24px rgba(220,38,38,0.34)' }} />}            
           </div>
 
           {/* Sold Out overlay */}
@@ -117,15 +117,15 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
             <div>
               {hasDiscount ? (
                 <>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textDecoration: 'line-through', textDecorationThickness: '1.6px', fontWeight: 600, letterSpacing: '0.2px', marginBottom: '2px' }}>                    
                     {Number(product.base_price).toLocaleString()} {t('common.egp')}
                   </div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#ef4444' }}>
+                  <div style={{ fontSize: '22px', fontWeight: 900, color: 'var(--danger)', lineHeight: 1.1, textShadow: '0 2px 14px rgba(239,68,68,0.22)' }}>                    
                     {Number(product.discounted_price).toLocaleString()} {t('common.egp')}
                   </div>
                 </>
               ) : (
-                <p className="text-xl font-extrabold text-indigo-400">
+                <p className="text-[22px] font-black leading-tight text-indigo-400" style={{ textShadow: '0 2px 16px rgba(108,99,255,0.25)' }}>                  
                   {Number(product.base_price).toLocaleString()} {t('common.egp')}
                 </p>
               )}

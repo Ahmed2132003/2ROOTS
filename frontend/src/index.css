@@ -96,13 +96,59 @@ input, button, select, textarea { font: inherit; }
 }
 .nav-inner { max-width: 1400px; margin: 0 auto; min-height: 72px; display: flex; align-items: center; gap: 10px; position: relative; }
 .nav-logo { text-decoration: none; display: inline-flex; align-items: center; }
-.brand-wordmark {
-  display: inline-block;
-  width: clamp(92px, 10.5vw, 122px);
-  height: clamp(30px, 3.6vw, 38px);
+.premium-logo {
+  --logo-size: clamp(42px, 4.9vw, 52px);
+  position: relative;
+  width: var(--logo-size);
+  height: var(--logo-size);
+  border-radius: 9999px;
+  padding: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(145deg, rgba(167,139,250,0.7), rgba(108,99,255,0.95));
+  box-shadow: 0 4px 16px rgba(108,99,255,0.28), inset 0 0 0 1px rgba(255,255,255,0.22);
+  animation: logoFloat 5.8s ease-in-out infinite, logoGlowPulse 3.8s ease-in-out infinite;
+  transition: transform 0.45s ease, box-shadow 0.35s ease;
+}
+.premium-logo__img {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;  
   background: #fff;
-  -webkit-mask: url('/shark-logo.png') center / contain no-repeat;
-  mask: url('/shark-logo.png') center / contain no-repeat;
+  background-image: url('/shark-logo.png');
+  background-size: cover;
+  background-position: center;
+}
+.premium-logo__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(255,255,255,0.32);
+  pointer-events: none;
+}
+.premium-logo__shine {
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(110deg, transparent 38%, rgba(255,255,255,0.34) 50%, transparent 62%);
+  transform: translateX(-130%) rotate(14deg);
+  transition: transform 0.8s cubic-bezier(.2,.7,.2,1);
+  pointer-events: none;
+}
+.nav-logo:hover .premium-logo { transform: rotate(7deg) translateY(-1px) scale(1.03); }
+.nav-logo:hover .premium-logo__shine { transform: translateX(130%) rotate(14deg); }
+:root[data-theme="light"] .premium-logo {
+  box-shadow: 0 4px 15px rgba(108,99,255,0.22), inset 0 0 0 1px rgba(255,255,255,0.7);
+}
+@keyframes logoFloat {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes logoGlowPulse {
+  0%,100% { box-shadow: 0 4px 16px rgba(108,99,255,0.24), inset 0 0 0 1px rgba(255,255,255,0.22); }
+  50% { box-shadow: 0 5px 24px rgba(108,99,255,0.42), inset 0 0 0 1px rgba(255,255,255,0.35); }  
 }
 
 .shark-logo-mark {
