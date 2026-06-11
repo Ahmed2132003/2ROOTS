@@ -15,10 +15,11 @@ class OrderEmailService:
     @staticmethod
     def _tracking_link(order_id: int) -> str:
         base_url = getattr(settings, 'ORDER_TRACKING_BASE_URL', 'https://yourdomain.com')
-        return f"{base_url.rstrip('/')}/track/{order_id}"    
+        return f"{base_url.rstrip('/')}/track/{order_id}"
 
     @classmethod
     def send_order_confirmation(cls, order) -> bool:
+        """Send confirmation email to customer + admin notification."""
         recipient = getattr(order.customer, 'email', '')
         if not recipient:
             logger.warning("Skipping confirmation email for order_id=%s: missing customer email", order.id)
@@ -33,13 +34,68 @@ class OrderEmailService:
         html_content = render_to_string('orders/emails/order_confirmation.html', context)
         text_content = strip_tags(html_content)
 
-        return cls._send_email(
+        # Send to customer
+        result = cls._send_email(
             subject='Order Confirmation',
             body=text_content,
             to_emails=[recipient],
             html_content=html_content,
             order_id=order.id,
             email_type='order_confirmation',
+        )
+
+        # Send admin notification
+        cls._send_admin_notification(order)
+
+        return result
+
+    @classmethod
+    def _send_admin_notification(cls, order) -> bool:
+        """Send a new order notification to the store admin."""
+        admin_email = getattr(settings, 'ADMIN_ORDER_EMAIL', None)
+        if not admin_email:
+            logger.warning("ADMIN_ORDER_EMAIL not set — skipping admin notification for order_id=%s", order.id)
+            return False
+
+        customer_name = getattr(order.customer, 'get_full_name', lambda: '')() or getattr(order.customer, 'username', 'Unknown')
+        customer_email = getattr(order.customer, 'email', 'N/A')
+
+        items_lines = '\n'.join(
+            f"  - {item.product.name} × {item.quantity}  ({item.price} EGP)"
+            for item in order.items.all()
+        )
+
+        body = (
+            f"🛒 New Order Received — #{order.id}\n\n"
+            f"Customer : {customer_name}\n"
+            f"Email    : {customer_email}\n"
+            f"Total    : {order.total_price} EGP\n"
+            f"Status   : {order.get_status_display()}\n\n"
+            f"Items:\n{items_lines}\n\n"
+            f"Tracking : {cls._tracking_link(order.id)}"
+        )
+
+        html_content = (
+            f"<h2>🛒 New Order — #{order.id}</h2>"
+            f"<p><b>Customer:</b> {customer_name}<br>"
+            f"<b>Email:</b> {customer_email}<br>"
+            f"<b>Total:</b> {order.total_price} EGP<br>"
+            f"<b>Status:</b> {order.get_status_display()}</p>"
+            f"<h3>Items</h3><ul>"
+            + ''.join(
+                f"<li>{item.product.name} × {item.quantity} — {item.price} EGP</li>"
+                for item in order.items.all()
+            )
+            + f"</ul><p><a href='{cls._tracking_link(order.id)}'>Track Order</a></p>"
+        )
+
+        return cls._send_email(
+            subject=f"[2Roots] New Order #{order.id} from {customer_name}",
+            body=body,
+            to_emails=[admin_email],
+            html_content=html_content,
+            order_id=order.id,
+            email_type='admin_new_order',
         )
 
     @classmethod

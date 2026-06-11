@@ -7,8 +7,8 @@ export default function Footer() {
   const t = (key) => {
     const messages = {
       'footer.line1': isRTL
-        ? 'تم إنشاء وتطوير متجر شارك بواسطة شركة كريتيفيتي كود'
-        : 'Shark Store was created and developed by Creativity Code Company',
+        ? 'تم إنشاء وتطوير متجر 2Roots بواسطة شركة كريتيفيتي كود'
+        : '2Roots Store was created and developed by Creativity Code Company',
       'footer.line2': isRTL ? 'وبواسطة المهندس أحمد إبراهيم' : 'and by Engineer Ahmed Ibrahim',
     };
     return messages[key] ?? key;

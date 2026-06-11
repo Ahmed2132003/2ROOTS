@@ -2,7 +2,7 @@ services:
 
   db:
     image: postgres:15
-    container_name: shark_db
+    container_name: 2roots_db
     env_file: .env
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -11,9 +11,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5435:5432"
+      - "5436:5432"
     networks:
-      - shark_network
+      - 2roots_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -22,20 +22,20 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: shark_redis
+    container_name: 2roots_redis
     ports:
-      - "6399:6379"
+      - "6381:6379"
     networks:
-      - shark_network
+      - 2roots_network
 
   backend:
     build: ./backend
-    container_name: shark_backend
+    container_name: 2roots_backend
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
     ports:
-      - "8080:8000"      
+      - "8081:8000"
     env_file: .env
     depends_on:
       db:
@@ -43,24 +43,24 @@ services:
       redis:
         condition: service_started
     networks:
-      - shark_network
+      - 2roots_network
 
   frontend:
     build: ./frontend
-    container_name: shark_frontend
+    container_name: 2roots_frontend
     environment:
       VITE_API_PROXY_TARGET: http://backend:8000
     volumes:
       - ./frontend:/app
-      - /app/node_modules      
+      - /app/node_modules
     ports:
-      - "5199:5173"
+      - "5200:5173"
     networks:
-      - shark_network
+      - 2roots_network
 
 volumes:
   postgres_data:
 
 networks:
-  shark_network:
+  2roots_network:
     driver: bridge

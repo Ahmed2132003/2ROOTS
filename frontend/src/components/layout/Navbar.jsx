@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-// frontend/src/components/layout/Navbar.jsx — UPDATED (Phase 5)
+// frontend/src/components/layout/Navbar.jsx
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -80,13 +80,13 @@ export default function Navbar() {
             to="/"
             className="nav-logo"
             onClick={closeMenus}
-            aria-label={isRTL ? 'شارك - الرئيسية' : 'Shark - Home'}
+            aria-label={isRTL ? '2Roots - الرئيسية' : '2Roots - Home'}
           >
             <span className="premium-logo" aria-hidden="true">
               <span className="premium-logo__ring" />
               <span className="premium-logo__shine" />
-              <span className="premium-logo__img" role="img" aria-label="Shark" />
-            </span>                                    
+              <span className="premium-logo__img" role="img" aria-label="2Roots" />
+            </span>
           </Link>
 
           <div className="desktop-nav">
