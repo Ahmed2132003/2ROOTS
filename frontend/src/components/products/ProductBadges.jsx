@@ -38,14 +38,16 @@ export function DiscountBadge({ percentage, style = {} }) {
   if (!percentage) return null;
   return (
     <span style={{
-      display: 'inline-flex', alignItems: 'center',
-      background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      background: 'linear-gradient(135deg, #f43f5e, #dc2626 55%, #b91c1c)',
       color: '#fff',
-      borderRadius: '8px', padding: '4px 10px',
-      fontSize: '11px', fontWeight: 800, letterSpacing: '1px',
+      border: '1px solid rgba(255,255,255,0.28)',
+      borderRadius: '999px', padding: '5px 11px',
+      fontSize: '11px', fontWeight: 800, letterSpacing: '0.4px',
+      boxShadow: '0 8px 20px rgba(220,38,38,0.38)',
       ...style,
     }}>
-      -{percentage}%
+      -{percentage}%      
     </span>
   );
 }

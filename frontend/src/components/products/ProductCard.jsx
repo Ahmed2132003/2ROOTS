@@ -78,7 +78,7 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
                 ✦ Featured
               </span>
             )}
-            {hasDiscount && !isSoldOut && <DiscountBadge percentage={discountPct} style={{ borderRadius: '999px', padding: '5px 12px', fontSize: '12px', boxShadow: '0 8px 24px rgba(220,38,38,0.34)' }} />}            
+            {hasDiscount && !isSoldOut && <DiscountBadge percentage={discountPct} style={{ fontSize: '12px' }} />}                               
           </div>
 
           {/* Sold Out overlay */}
@@ -100,27 +100,27 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
           )}
         </div>
 
-        <div className="space-y-3 p-4">
+        <div className="space-y-3.5 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-300">
             {product.category?.name || '—'}
           </p>
 
           <h3
-            className="min-h-[48px] text-base font-bold text-white"
+            className="min-h-[52px] text-[17px] font-bold leading-[1.45] text-white"            
             style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
           >
             {product.name}
           </h3>
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-end justify-between gap-3 pt-0.5">            
             {/* Price */}
-            <div>
+            <div style={{ display: 'grid', gap: '3px' }}>              
               {hasDiscount ? (
                 <>
-                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textDecoration: 'line-through', textDecorationThickness: '1.6px', fontWeight: 600, letterSpacing: '0.2px', marginBottom: '2px' }}>                    
+                  <div style={{ fontSize: '15px', color: 'color-mix(in srgb, var(--text-primary) 58%, transparent)', textDecoration: 'line-through', textDecorationThickness: '2px', textDecorationColor: 'color-mix(in srgb, var(--text-primary) 62%, transparent)', fontWeight: 700, letterSpacing: '0.15px', lineHeight: 1.25 }}>                                                     
                     {Number(product.base_price).toLocaleString()} {t('common.egp')}
                   </div>
-                  <div style={{ fontSize: '22px', fontWeight: 900, color: 'var(--danger)', lineHeight: 1.1, textShadow: '0 2px 14px rgba(239,68,68,0.22)' }}>                    
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--danger)', lineHeight: 1.1, textShadow: '0 2px 14px rgba(239,68,68,0.22)' }}>                                                          
                     {Number(product.discounted_price).toLocaleString()} {t('common.egp')}
                   </div>
                 </>

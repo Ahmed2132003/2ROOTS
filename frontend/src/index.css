@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Cairo:wght@300;400;500;600;700;900&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 /* ─── Dark Theme (Default) ─────────────────────────── */
 :root[data-theme="dark"] {
@@ -69,7 +69,7 @@ body {
 
 /* RTL/LTR */
 [dir="rtl"] { font-family: 'Cairo', sans-serif; }
-[dir="ltr"] { font-family: 'Playfair Display', 'Times New Roman', serif; }
+[dir="ltr"] { font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }
 
 /* ─── Scrollbar ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
@@ -119,8 +119,11 @@ input, button, select, textarea { font: inherit; }
   border-radius: 9999px;  
   background: #fff;
   background-image: url('/shark-logo.png');
-  background-size: cover;
-  background-position: center;
+  background-size: 230%;
+  background-position: center 60%;
+  transform: scale(1.06);
+  transform-origin: center;
+  filter: saturate(1.03) contrast(1.02);  
 }
 .premium-logo__ring {
   position: absolute;
