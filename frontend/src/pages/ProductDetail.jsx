@@ -6,16 +6,37 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
 import { useAddToCartMutation } from '../hooks/useCartActions';
 
-// ─── Animation Variants ────────────────────────────────────────────────────────
+/* ─── Design Tokens ────────────────────────────────────────────────────────── */
+const T = {
+  bg:          '#0A0A0A',
+  bgCard:      '#111111',
+  bgHover:     '#1A1A1A',
+  border:      'rgba(216,210,194,0.12)',
+  borderHover: 'rgba(216,210,194,0.3)',
+  textPrimary: '#FFFFFF',
+  textSecond:  '#D9D9D9',
+  textMuted:   'rgba(217,217,217,0.4)',
+  stone:       '#D8D2C2',
+  gold:        '#B89B5E',
+  goldGlow:    'rgba(184,155,94,0.10)',
+  green:       '#2F4F3E',
+  danger:      '#B91C1C',
+  success:     '#15803D',
+  warning:     '#B45309',
+};
+
+/* ─── Animation Variants ─────────────────────────────────────────────────── */
 const fadeUp = {
-  hidden:  { opacity: 0, y: 30 },
+  hidden:  { opacity: 0, y: 20 },
   visible: (i = 0) => ({
     opacity: 1, y: 0,
-    transition: { duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }
+    transition: { duration: 0.55, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] },
   }),
 };
 
-// ─── Image Gallery ─────────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════════
+   IMAGE GALLERY
+══════════════════════════════════════════════════════════════════════════════ */
 function ImageGallery({ images, name }) {
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
@@ -25,121 +46,118 @@ function ImageGallery({ images, name }) {
   return (
     <div style={{ position: 'sticky', top: '90px' }}>
 
-      {/* Main Image */}
-      <Motion.div
-        layoutId="main-image"
+      {/* Main image */}
+      <div
         onClick={() => setZoomed(true)}
         style={{
-          borderRadius: '24px', overflow: 'hidden',
-          aspectRatio: '1', cursor: 'zoom-in',
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          marginBottom: '16px', position: 'relative',
+          borderRadius: '4px', overflow: 'hidden',
+          aspectRatio: '3/4', cursor: 'zoom-in',
+          background: T.bgCard,
+          border: `1px solid ${T.border}`,
+          marginBottom: '12px', position: 'relative',
         }}
       >
         <AnimatePresence mode="wait">
-          <Motion.div key={active}
-            initial={{ opacity: 0, scale: 1.05 }}
+          <Motion.div
+            key={active}
+            initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.4 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             style={{ width: '100%', height: '100%' }}
           >
             {imgs[active]?.image ? (
               <img
-                  loading="lazy"
+                loading="lazy"
                 src={imgs[active].image}
                 alt={imgs[active].alt_text || name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
             ) : (
               <div style={{
                 width: '100%', height: '100%',
-                background: 'linear-gradient(135deg, var(--bg-hover), var(--accent-glow))',
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: '96px',
+                background: T.bgHover,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                📦
+                <span style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '18px', letterSpacing: '6px', color: T.textMuted,
+                }}>NO IMAGE</span>
               </div>
             )}
           </Motion.div>
         </AnimatePresence>
 
-        {/* Zoom Icon */}
+        {/* Zoom hint */}
         <div style={{
-          position: 'absolute', bottom: '16px', right: '16px',
-          background: 'rgba(0,0,0,0.5)', borderRadius: '10px',
-          padding: '8px', fontSize: '16px', backdropFilter: 'blur(8px)',
+          position: 'absolute', bottom: '12px', right: '12px',
+          background: 'rgba(0,0,0,0.6)', borderRadius: '2px',
+          padding: '5px 10px', fontSize: '11px',
+          fontFamily: "'Bebas Neue', sans-serif",
+          letterSpacing: '2px', color: T.stone,
+          backdropFilter: 'blur(6px)',
         }}>
-          🔍
+          ZOOM
         </div>
-      </Motion.div>
+      </div>
 
       {/* Thumbnails */}
       {imgs.length > 1 && (
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {imgs.map((img, i) => (
             <Motion.div
               key={i}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => setActive(i)}
               style={{
-                width: '72px', height: '72px',
-                borderRadius: '14px', overflow: 'hidden',
-                border: `2px solid ${active === i ? 'var(--accent)' : 'var(--border)'}`,
+                width: '68px', height: '68px',
+                borderRadius: '4px', overflow: 'hidden',
+                border: `1.5px solid ${active === i ? T.gold : T.border}`,
                 cursor: 'pointer', flexShrink: 0,
                 transition: 'border-color 0.2s',
               }}
             >
               {img.image ? (
-                <img src={img.image} alt={img.alt_text} loading="lazy" width="96" height="96"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={img.image} alt={img.alt_text} loading="lazy"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               ) : (
-                <div style={{
-                  width: '100%', height: '100%',
-                  background: 'var(--bg-hover)',
-                  display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', fontSize: '28px',
-                }}>📦</div>
+                <div style={{ width: '100%', height: '100%', background: T.bgHover }} />
               )}
             </Motion.div>
           ))}
         </div>
       )}
 
-      {/* Zoom Modal */}
+      {/* Zoom modal */}
       <AnimatePresence>
         {zoomed && (
           <Motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setZoomed(false)}
             style={{
               position: 'fixed', inset: 0, zIndex: 999,
-              background: 'rgba(0,0,0,0.92)',
+              background: 'rgba(0,0,0,0.95)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               padding: '20px', cursor: 'zoom-out',
-              backdropFilter: 'blur(12px)',
+              backdropFilter: 'blur(16px)',
             }}
           >
             <Motion.img
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.4 }}
               src={imgs[active]?.image}
               alt={name}
-              style={{
-                maxWidth: '90vw', maxHeight: '90vh',
-                objectFit: 'contain', borderRadius: '20px',
-              }}
+              style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '4px' }}
             />
             <button onClick={() => setZoomed(false)} style={{
               position: 'fixed', top: '20px', right: '20px',
-              background: 'rgba(255,255,255,0.1)', border: 'none',
-              borderRadius: '50%', width: '44px', height: '44px',
-              color: 'white', fontSize: '20px', cursor: 'pointer',
+              background: 'rgba(255,255,255,0.08)',
+              border: `1px solid ${T.border}`,
+              borderRadius: '2px', width: '40px', height: '40px',
+              color: T.stone, fontSize: '16px', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>✕</button>
           </Motion.div>
@@ -149,151 +167,189 @@ function ImageGallery({ images, name }) {
   );
 }
 
-// ─── Variant Selector ──────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════════
+   VARIANT SELECTOR
+══════════════════════════════════════════════════════════════════════════════ */
 function VariantSelector({ variants, selected, onSelect }) {
   const colors = useMemo(() => {
     const map = new Map();
-    variants?.forEach((variant) => {
-      if (variant.color?.name && !map.has(variant.color.name)) map.set(variant.color.name, variant.color);
-    });
+    variants?.forEach(v => { if (v.color?.name && !map.has(v.color.name)) map.set(v.color.name, v.color); });
     return Array.from(map.values());
   }, [variants]);
 
   const sizes = useMemo(() => {
     const map = new Map();
-    variants?.forEach((variant) => {
-      if (variant.size?.name && !map.has(variant.size.name)) map.set(variant.size.name, variant.size);
-    });
+    variants?.forEach(v => { if (v.size?.name && !map.has(v.size.name)) map.set(v.size.name, v.size); });
     return Array.from(map.values());
   }, [variants]);
 
   const selectedColor = selected?.color?.name || '';
-  const selectedSize = selected?.size?.name || '';
+  const selectedSize  = selected?.size?.name  || '';
 
   const choose = ({ colorName = selectedColor, sizeName = selectedSize }) => {
-    const next = variants.find((variant) => (
-      (!colorName || variant.color?.name === colorName) &&
-      (!sizeName || variant.size?.name === sizeName) &&
-      variant.stock?.is_available
-    )) || variants.find((variant) => (
-      (!colorName || variant.color?.name === colorName) &&
-      (!sizeName || variant.size?.name === sizeName)
-    ));
+    const next =
+      variants.find(v => (!colorName || v.color?.name === colorName) && (!sizeName || v.size?.name === sizeName) && v.stock?.is_available) ||
+      variants.find(v => (!colorName || v.color?.name === colorName) && (!sizeName || v.size?.name === sizeName));
     if (next) onSelect(next);
   };
-  
+
+  const labelStyle = {
+    fontFamily: "'Bebas Neue', sans-serif",
+    fontSize: '11px', letterSpacing: '3px',
+    color: T.textMuted, marginBottom: '10px',
+    display: 'block',
+  };
+
   return (
     <div style={{ marginBottom: '28px' }}>
+      {/* Selected summary */}
       <div style={{
-        fontSize: '12px', fontWeight: 700, letterSpacing: '2px',
-        color: 'var(--text-muted)', marginBottom: '14px', textTransform: 'uppercase',        
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: '11px', letterSpacing: '3px',
+        color: T.stone, marginBottom: '18px',
       }}>
-        ✦ {selected ? `${selected.color?.name || ''} ${selected.size?.name || ''}`.trim() : 'SELECT OPTIONS'}          
+        {selected
+          ? `✦ ${[selected.color?.name, selected.size?.name].filter(Boolean).join(' / ').toUpperCase()}`
+          : '✦ SELECT OPTIONS'}
       </div>
+
+      {/* Colors */}
       {colors.length > 0 && (
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>Color</div>
+        <div style={{ marginBottom: '20px' }}>
+          <span style={labelStyle}>COLOR</span>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {colors.map((color) => {
+            {colors.map(color => {
               const isSelected = selectedColor === color.name;
               return (
-                <Motion.button key={color.id || color.name} type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => choose({ colorName: color.name })} style={{
-                  width: '42px', height: '42px', borderRadius: '50%',
-                  border: `3px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
-                  background: color.hex_code || 'var(--bg-card)', cursor: 'pointer',
-                }} title={color.name} aria-label={color.name} />
+                <Motion.button
+                  key={color.id || color.name}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => choose({ colorName: color.name })}
+                  title={color.name}
+                  style={{
+                    width: '36px', height: '36px', borderRadius: '50%',
+                    border: `2px solid ${isSelected ? T.gold : T.border}`,
+                    background: color.hex_code || T.bgCard,
+                    cursor: 'pointer',
+                    boxShadow: isSelected ? `0 0 0 3px ${T.bgCard}, 0 0 0 5px ${T.gold}` : 'none',
+                    transition: 'all 0.2s',
+                  }}
+                />
               );
             })}
           </div>
         </div>
       )}
 
+      {/* Sizes */}
       {sizes.length > 0 && (
         <div>
-          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>Size</div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {sizes.map((size) => {
-              const candidate = variants.find((variant) => variant.size?.name === size.name && (!selectedColor || variant.color?.name === selectedColor));
+          <span style={labelStyle}>SIZE</span>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {sizes.map(size => {
+              const candidate   = variants.find(v => v.size?.name === size.name && (!selectedColor || v.color?.name === selectedColor));
               const isAvailable = candidate?.stock?.is_available;
-              const isSelected = selectedSize === size.name;
+              const isSelected  = selectedSize === size.name;
               return (
-                <Motion.button key={size.id || size.name} type="button" whileHover={{ scale: isAvailable ? 1.05 : 1 }} whileTap={{ scale: isAvailable ? 0.95 : 1 }} onClick={() => choose({ sizeName: size.name })} style={{
-                  padding: '10px 18px', borderRadius: '12px',
-                  border: `2px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
-                  background: isSelected ? 'var(--accent-glow)' : 'var(--bg-card)',
-                  color: isAvailable ? 'var(--text-primary)' : 'var(--text-muted)',
-                  cursor: 'pointer', fontWeight: 700,                  
-                }}>
-                  
+                <Motion.button
+                  key={size.id || size.name}
+                  whileHover={{ borderColor: isAvailable ? T.stone : T.border }}
+                  whileTap={{ scale: isAvailable ? 0.95 : 1 }}
+                  onClick={() => isAvailable && choose({ sizeName: size.name })}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: '2px',
+                    border: `1px solid ${isSelected ? T.gold : T.border}`,
+                    background: isSelected ? T.goldGlow : 'transparent',
+                    color: isAvailable
+                      ? isSelected ? T.gold : T.textSecond
+                      : T.textMuted,
+                    cursor: isAvailable ? 'pointer' : 'not-allowed',
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: '13px', letterSpacing: '2px',
+                    textDecoration: !isAvailable ? 'line-through' : 'none',
+                    transition: 'all 0.2s',
+                    position: 'relative',
+                  }}
+                >
                   {size.name}
                 </Motion.button>
               );
             })}
           </div>
         </div>
-      )}      
+      )}
     </div>
   );
 }
 
-// ─── Quantity Selector ─────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════════
+   QUANTITY SELECTOR
+══════════════════════════════════════════════════════════════════════════════ */
 function QuantitySelector({ quantity, setQuantity, max }) {
+  const btnStyle = (disabled) => ({
+    width: '44px', height: '44px',
+    background: 'transparent', border: 'none',
+    color: disabled ? T.textMuted : T.textPrimary,
+    fontSize: '20px', cursor: disabled ? 'not-allowed' : 'pointer',
+    fontFamily: "'Inter', sans-serif", fontWeight: 300,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'color 0.2s',
+  });
+
   return (
     <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: '0',
-      background: 'var(--bg-card)', border: '1px solid var(--border)',
-      borderRadius: '14px', overflow: 'hidden',
+      display: 'inline-flex', alignItems: 'center',
+      background: T.bgCard, border: `1px solid ${T.border}`,
+      borderRadius: '2px', overflow: 'hidden',
     }}>
-      {[
-        { label: '−', action: () => setQuantity(q => Math.max(1, q - 1)), disabled: quantity <= 1 },
-        { label: '+', action: () => setQuantity(q => Math.min(max, q + 1)), disabled: quantity >= max },
-      ].map((btn, i) => (
-        <Motion.button
-          key={i}
-          whileTap={{ scale: 0.9 }}
-          onClick={btn.action}
-          disabled={btn.disabled}
-          style={{
-            width: '44px', height: '44px',
-            background: 'transparent', border: 'none',
-            color: btn.disabled ? 'var(--text-muted)' : 'var(--text-primary)',
-            fontSize: '20px', cursor: btn.disabled ? 'not-allowed' : 'pointer',
-            fontWeight: 300,
-            order: i === 0 ? 0 : 2,
-          }}
-        >
-          {btn.label}
-        </Motion.button>
-      ))}
+      <Motion.button whileTap={{ scale: 0.85 }}
+        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+        disabled={quantity <= 1}
+        style={btnStyle(quantity <= 1)}
+      >−</Motion.button>
+
       <div style={{
         width: '52px', height: '44px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 800, fontSize: '16px', color: 'var(--text-primary)',
-        order: 1,
-        borderLeft:  '1px solid var(--border)',
-        borderRight: '1px solid var(--border)',
+        fontFamily: "'Bebas Neue', sans-serif", fontSize: '18px',
+        color: T.textPrimary, letterSpacing: '1px',
+        borderLeft:  `1px solid ${T.border}`,
+        borderRight: `1px solid ${T.border}`,
       }}>
         {quantity}
       </div>
+
+      <Motion.button whileTap={{ scale: 0.85 }}
+        onClick={() => setQuantity(q => Math.min(max, q + 1))}
+        disabled={quantity >= max}
+        style={btnStyle(quantity >= max)}
+      >+</Motion.button>
     </div>
   );
 }
 
-// ─── Toast Notification ────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════════════════════════ */
 function Toast({ message, type }) {
   return (
     <Motion.div
-      initial={{ opacity: 0, y: 40, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 40, scale: 0.9 }}
+      initial={{ opacity: 0, y: 32, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0,  scale: 1 }}
+      exit={{    opacity: 0, y: 32, scale: 0.95 }}
       style={{
         position: 'fixed', bottom: '32px',
         left: '50%', transform: 'translateX(-50%)',
-        background: type === 'success' ? 'var(--success)' : 'var(--danger)',
-        color: 'white', borderRadius: '16px',
-        padding: '14px 28px', fontWeight: 700,
-        fontSize: '15px', zIndex: 9999,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+        background: type === 'success' ? T.green : T.danger,
+        color: T.stone,
+        borderRadius: '2px',
+        padding: '13px 28px',
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: '14px', letterSpacing: '3px',
+        zIndex: 9999,
+        border: `1px solid ${type === 'success' ? 'rgba(47,79,62,0.6)' : 'rgba(185,28,28,0.5)'}`,
         whiteSpace: 'nowrap',
       }}
     >
@@ -302,41 +358,31 @@ function Toast({ message, type }) {
   );
 }
 
-// ─── Skeleton ──────────────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════════
+   SKELETON
+══════════════════════════════════════════════════════════════════════════════ */
 function ProductDetailSkeleton() {
   return (
     <div style={{
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-      gap: '60px', padding: '40px 5%', maxWidth: '1400px', margin: '0 auto',
+      gap: '60px', padding: '40px 5%',
+      maxWidth: '1400px', margin: '0 auto',
     }}>
-      <Motion.div
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-      >
-        <div style={{
-          aspectRatio: '1', background: 'var(--bg-card)',
-          borderRadius: '24px', marginBottom: '16px',
-        }} />
-        <div style={{ display: 'flex', gap: '10px' }}>
+      <Motion.div animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 1.8, repeat: Infinity }}>
+        <div style={{ aspectRatio: '3/4', background: T.bgCard, borderRadius: '4px', marginBottom: '12px' }} />
+        <div style={{ display: 'flex', gap: '8px' }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} style={{
-              width: '72px', height: '72px',
-              background: 'var(--bg-card)', borderRadius: '14px',
-            }} />
+            <div key={i} style={{ width: '68px', height: '68px', background: T.bgCard, borderRadius: '4px' }} />
           ))}
         </div>
       </Motion.div>
-      <Motion.div
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-        style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
-      >
-        {[20, 60, 40, 80, 30, 50].map((w, i) => (
+      <Motion.div animate={{ opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 1.8, repeat: Infinity, delay: 0.2 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        {[25, 55, 35, 70, 30, 50].map((w, i) => (
           <div key={i} style={{
-            height: i === 1 ? '48px' : i === 3 ? '80px' : '20px',
-            width: `${w}%`,
-            background: 'var(--bg-card)', borderRadius: '10px',
+            height: i === 1 ? '44px' : i === 3 ? '72px' : '16px',
+            width: `${w}%`, background: T.bgCard, borderRadius: '2px',
           }} />
         ))}
       </Motion.div>
@@ -344,51 +390,51 @@ function ProductDetailSkeleton() {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════════════════════════════════════════════ */
 export default function ProductDetail() {
-  const { slug }              = useParams();
-  const { i18n }          = useTranslation();
-  
-    const t = (key) => {
-    const messages = {
-      'common.error': isRTL ? 'خطأ' : 'Error',
-      'common.back': isRTL ? 'رجوع' : 'Back',
-      'nav.home': isRTL ? 'الرئيسية' : 'Home',
-      'nav.products': isRTL ? 'المنتجات' : 'Products',
-      'products.out_of_stock': isRTL ? 'نفد المخزون' : 'Out of stock',
-      'common.egp': isRTL ? 'ج.م' : 'EGP',
-      'cart.quantity': isRTL ? 'الكمية' : 'Quantity',
-      'products.add_to_cart': isRTL ? 'أضف للسلة' : 'Add to cart',
-    };
-    return messages[key] ?? key;
-  };
-  const isRTL                 = i18n.language === 'ar';
-  const navigate              = useNavigate();
+  const { slug }   = useParams();
+  const { i18n }   = useTranslation();
+  const isRTL      = i18n.language === 'ar';
+  const navigate   = useNavigate();
 
-  const [selectedVariantOverride, setSelectedVariantOverride] = useState(null);  
-  const [quantity, setQuantity]               = useState(1);
-  const [toast, setToast]                     = useState(null);
+  /* Inline translation shim */
+  const t = (key) => {
+    const map = {
+      'common.error':          isRTL ? 'خطأ' : 'Error',
+      'common.back':           isRTL ? 'رجوع' : 'Back',
+      'nav.home':              isRTL ? 'الرئيسية' : 'Home',
+      'nav.products':          isRTL ? 'المنتجات' : 'Products',
+      'products.out_of_stock': isRTL ? 'نفد المخزون' : 'OUT OF STOCK',
+      'common.egp':            isRTL ? 'ج.م' : 'EGP',
+      'cart.quantity':         isRTL ? 'الكمية' : 'QUANTITY',
+      'products.add_to_cart':  isRTL ? 'أضف للسلة' : 'ADD TO CART',
+    };
+    return map[key] ?? key;
+  };
+
+  const [selectedVariantOverride, setSelectedVariantOverride] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [toast,    setToast]    = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Fetch Product
+  /* Fetch */
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product', slug],
-    queryFn:  () => api.get(`/products/items/${slug}/`).then(r => r.data),    
+    queryFn:  () => api.get(`/products/items/${slug}/`).then(r => r.data),
   });
 
-  // Add to Cart Mutation
-  const addToCart = useAddToCartMutation({    
-    onSuccess: () => {
-      showToast(isRTL ? 'تمت الإضافة للسلة ✓' : 'Added to cart!', 'success');
-    },
+  const addToCart = useAddToCartMutation({
+    onSuccess: () => showToast(isRTL ? 'تمت الإضافة للسلة' : 'ADDED TO CART', 'success'),
     onError: (err) => {
       const msg = err.response?.data?.quantity?.[0]
         || err.response?.data?.detail
-        || (isRTL ? 'حدث خطأ' : 'Something went wrong');
+        || (isRTL ? 'حدث خطأ' : 'SOMETHING WENT WRONG');
       showToast(msg, 'error');
     },
   });
@@ -397,23 +443,30 @@ export default function ProductDetail() {
 
   if (isError) return (
     <div style={{
-      minHeight: '60vh', display: 'flex',
-      flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: '16px',
-      color: 'var(--text-muted)',
+      minHeight: '60vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: '20px',
     }}>
-      <div style={{ fontSize: '64px' }}>😕</div>
-      <div style={{ fontSize: '20px', fontWeight: 700 }}>{t('common.error')}</div>
+      <div style={{
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: '48px', letterSpacing: '4px', color: T.textMuted,
+      }}>
+        PRODUCT NOT FOUND
+      </div>
       <Motion.button
-        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
+        whileHover={{ borderColor: T.stone, color: T.stone }}
+        whileTap={{ scale: 0.97 }}
         onClick={() => navigate('/products')}
         style={{
-          background: 'var(--accent-glow)', border: '1px solid var(--accent)',
-          borderRadius: '14px', padding: '12px 28px',
-          color: 'var(--accent)', fontWeight: 700, cursor: 'pointer',
+          background: 'transparent',
+          border: `1px solid ${T.border}`,
+          borderRadius: '2px', padding: '12px 32px',
+          color: T.textMuted, cursor: 'pointer',
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: '13px', letterSpacing: '3px',
+          transition: 'all 0.2s',
         }}
       >
-        {t('common.back')}
+        ← {t('common.back')}
       </Motion.button>
     </div>
   );
@@ -422,23 +475,25 @@ export default function ProductDetail() {
     || product?.variants?.find(v => v.stock?.is_available)
     || product?.variants?.[0]
     || null;
-  const maxQty    = selectedVariant?.stock?.quantity || 1;
+
+  const maxQty          = selectedVariant?.stock?.quantity || 1;
   const isProductSoldOut = Boolean(product?.is_sold_out || product?.stock_status === 'sold_out');
-  const canAdd    = Boolean(selectedVariant?.stock?.is_available && quantity > 0 && !isProductSoldOut);
-  const basePrice = Number(selectedVariant?.price ?? product?.base_price ?? 0);
-  const effectivePrice = Number(selectedVariant?.effective_price ?? product?.discounted_price ?? basePrice);
-  const hasDiscount = effectivePrice < basePrice;
+  const canAdd          = Boolean(selectedVariant?.stock?.is_available && quantity > 0 && !isProductSoldOut);
+  const basePrice       = Number(selectedVariant?.price ?? product?.base_price ?? 0);
+  const effectivePrice  = Number(selectedVariant?.effective_price ?? product?.discounted_price ?? basePrice);
+  const hasDiscount     = effectivePrice < basePrice;
+
   return (
-    <div style={{ minHeight: '100vh', padding: '40px 5%' }}>
+    <div style={{ minHeight: '100vh', background: T.bg, padding: '40px 5% 80px' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
 
-        {/* Breadcrumb */}
+        {/* ── Breadcrumb ── */}
         <Motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            marginBottom: '40px', fontSize: '14px',
-            color: 'var(--text-muted)', flexWrap: 'wrap',
+            marginBottom: '48px', flexWrap: 'wrap',
           }}
         >
           {[
@@ -448,167 +503,196 @@ export default function ProductDetail() {
           ].map((crumb, i, arr) => (
             <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {crumb.to ? (
-                <Link to={crumb.to} style={{
-                  color: 'var(--text-muted)', textDecoration: 'none',
-                  transition: 'color 0.2s',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                <Link to={crumb.to}
+                  onMouseEnter={e => e.currentTarget.style.color = T.stone}
+                  onMouseLeave={e => e.currentTarget.style.color = T.textMuted}
+                  style={{
+                    color: T.textMuted, textDecoration: 'none',
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: '11px', letterSpacing: '2px',
+                    transition: 'color 0.2s',
+                  }}
                 >
                   {crumb.label}
                 </Link>
               ) : (
-                <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                <span style={{
+                  color: T.stone,
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '11px', letterSpacing: '2px',
+                }}>
                   {crumb.label}
                 </span>
               )}
               {i < arr.length - 1 && (
-                <span style={{ opacity: 0.4 }}>{isRTL ? '←' : '→'}</span>
+                <span style={{ color: T.textMuted, fontSize: '10px', opacity: 0.5 }}>
+                  {isRTL ? '←' : '→'}
+                </span>
               )}
             </span>
           ))}
         </Motion.div>
 
-        {/* Main Grid */}
+        {/* ── Main Grid ── */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '60px', alignItems: 'start',
+          gap: '64px', alignItems: 'start',
         }}>
 
-          {/* ── Left: Gallery ── */}
+          {/* Gallery */}
           <Motion.div
-            initial={{ opacity: 0, x: isRTL ? 40 : -40 }}
+            initial={{ opacity: 0, x: isRTL ? 32 : -32 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
             <ImageGallery images={product?.images} name={product?.name} />
           </Motion.div>
 
-          {/* ── Right: Info ── */}
+          {/* Info */}
           <Motion.div
-            initial={{ opacity: 0, x: isRTL ? -40 : 40 }}
+            initial={{ opacity: 0, x: isRTL ? -32 : 32 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
 
-            {/* Category + Badge */}
-            <Motion.div variants={fadeUp} custom={0} style={{
+            {/* Eyebrow — category + badges */}
+            <div style={{
               display: 'flex', alignItems: 'center',
               gap: '12px', marginBottom: '16px', flexWrap: 'wrap',
             }}>
               <span style={{
-                fontSize: '11px', color: 'var(--accent)',
-                fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase',
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: '11px', color: T.stone,
+                letterSpacing: '3px',
               }}>
-                ✦ {product?.category?.name}
+                ✦ {product?.category?.name?.toUpperCase()}
               </span>
+
               {product?.is_featured && (
                 <span style={{
-                  background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-                  color: 'white', borderRadius: '8px',
-                  padding: '3px 12px', fontSize: '11px', fontWeight: 700,
+                  background: T.green,
+                  color: T.stone, borderRadius: '2px',
+                  padding: '3px 10px',
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '10px', letterSpacing: '2px',
                 }}>
                   FEATURED
                 </span>
               )}
-              {(isProductSoldOut || !product?.in_stock) && (                
+
+              {(isProductSoldOut || !product?.in_stock) && (
                 <span style={{
-                  background: 'var(--danger)', color: 'white',
-                  borderRadius: '8px', padding: '3px 12px',
-                  fontSize: '11px', fontWeight: 700,
+                  background: T.danger, color: '#fff',
+                  borderRadius: '2px', padding: '3px 10px',
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '10px', letterSpacing: '2px',
                 }}>
                   {t('products.out_of_stock')}
                 </span>
               )}
-            </Motion.div>
+            </div>
 
-            {/* Name */}
-            <Motion.h1 variants={fadeUp} custom={1} style={{
-              fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 800,
-              color: 'var(--text-primary)', lineHeight: 1.2,
-              marginBottom: '24px',
-              fontFamily: "'Syne', 'Cairo', sans-serif",
-            }}>
+            {/* Product name */}
+            <Motion.h1
+              variants={fadeUp} custom={1}
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 'clamp(36px, 5vw, 64px)',
+                fontWeight: 400,
+                color: T.textPrimary,
+                lineHeight: 0.95,
+                letterSpacing: '2px',
+                marginBottom: '28px',
+              }}
+            >
               {product?.name}
             </Motion.h1>
 
             {/* Price */}
             <Motion.div variants={fadeUp} custom={2} style={{ marginBottom: '28px' }}>
-              <div style={{
-                fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 800,
-                background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                lineHeight: 1,
-              }}>
-                {effectivePrice.toLocaleString()}                
-                <span style={{ fontSize: '20px', marginInlineStart: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 'clamp(36px, 4vw, 52px)',
+                  color: hasDiscount ? T.gold : T.textPrimary,
+                  lineHeight: 1, letterSpacing: '1px',
+                }}>
+                  {effectivePrice.toLocaleString()}
+                </span>
+                <span style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '16px', letterSpacing: '3px', color: T.textMuted,
+                }}>
                   {t('common.egp')}
                 </span>
+                {hasDiscount && (
+                  <span style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '14px', color: T.textMuted,
+                    textDecoration: 'line-through', fontWeight: 400,
+                  }}>
+                    {basePrice.toLocaleString()}
+                  </span>
+                )}
               </div>
 
-              {hasDiscount && (
-                <div style={{
-                  marginTop: '10px',
-                  color: 'var(--text-muted)',
-                  textDecoration: 'line-through',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                }}>
-                  {basePrice.toLocaleString()} {t('common.egp')}
-                </div>
-              )}
-              {/* Stock Status */}
+              {/* Stock indicator */}
               {selectedVariant && (
                 <Motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                   style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
                     marginTop: '12px',
-                    color: selectedVariant.stock?.is_available
-                      ? selectedVariant.stock?.is_low_stock
-                        ? 'var(--warning)'
-                        : 'var(--success)'
-                      : 'var(--danger)',
-                    fontSize: '13px', fontWeight: 700,
+                    color: isProductSoldOut
+                      ? T.danger
+                      : selectedVariant.stock?.is_low_stock
+                        ? T.warning
+                        : T.success,
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '12px', fontWeight: 500, letterSpacing: '0.5px',
                   }}
                 >
-                  <div style={{
-                    width: '8px', height: '8px', borderRadius: '50%',
-                    background: 'currentColor',
-                  }} />
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
                   {isProductSoldOut
-                    ? (isRTL ? 'نفدت الكمية (Sold Out)' : 'Sold Out')
-                    : selectedVariant.stock?.is_available                  
-                    ? selectedVariant.stock?.is_low_stock
-                      ? `${isRTL ? 'كمية محدودة' : 'Low stock'} — ${selectedVariant.stock.quantity} ${isRTL ? 'متبقي' : 'left'}`
-                      : isRTL ? 'متاح' : 'In Stock'
-                    : t('products.out_of_stock')}
+                    ? (isRTL ? 'نفدت الكمية' : 'Sold Out')
+                    : selectedVariant.stock?.is_available
+                      ? selectedVariant.stock?.is_low_stock
+                        ? `${isRTL ? 'كمية محدودة' : 'Low stock'} — ${selectedVariant.stock.quantity} ${isRTL ? 'متبقي' : 'left'}`
+                        : isRTL ? 'متاح' : 'In Stock'
+                      : t('products.out_of_stock')}
                 </Motion.div>
               )}
             </Motion.div>
 
+            {/* Divider */}
+            <div style={{ height: '1px', background: T.border, marginBottom: '28px' }} />
+
             {/* Description */}
             {product?.description && (
-              <Motion.p variants={fadeUp} custom={3} style={{
-                color: 'var(--text-secondary)', fontSize: '15px',
-                lineHeight: 1.8, marginBottom: '28px',
-                paddingBottom: '28px',
-                borderBottom: '1px solid var(--border)',
-              }}>
+              <Motion.p
+                variants={fadeUp} custom={3}
+                style={{
+                  color: T.textMuted,
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: '14px', lineHeight: 1.8,
+                  marginBottom: '28px',
+                  paddingBottom: '28px',
+                  borderBottom: `1px solid ${T.border}`,
+                  fontWeight: 400,
+                }}
+              >
                 {product.description}
               </Motion.p>
             )}
 
-            {/* Variant Selector */}
-            {product?.has_variants && product?.variants?.length > 0 && (              
+            {/* Variants */}
+            {product?.has_variants && product?.variants?.length > 0 && (
               <Motion.div variants={fadeUp} custom={4}>
                 <VariantSelector
                   variants={product.variants}
                   selected={selectedVariant}
-                  onSelect={setSelectedVariantOverride}                  
-                  t={t}
+                  onSelect={setSelectedVariantOverride}
                 />
               </Motion.div>
             )}
@@ -617,104 +701,104 @@ export default function ProductDetail() {
             {canAdd && (
               <Motion.div variants={fadeUp} custom={5} style={{ marginBottom: '28px' }}>
                 <div style={{
-                  fontSize: '12px', fontWeight: 700, letterSpacing: '2px',
-                  color: 'var(--text-muted)', marginBottom: '14px',
-                  textTransform: 'uppercase',
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '11px', letterSpacing: '3px',
+                  color: T.textMuted, marginBottom: '12px',
                 }}>
-                  ✦ {t('cart.quantity')}
+                  {t('cart.quantity')}
                 </div>
-                <QuantitySelector
-                  quantity={quantity}
-                  setQuantity={setQuantity}
-                  max={maxQty}
-                />
+                <QuantitySelector quantity={quantity} setQuantity={setQuantity} max={maxQty} />
               </Motion.div>
             )}
 
-            {/* Add to Cart CTA */}
+            {/* ── CTA Buttons ── */}
             <Motion.div variants={fadeUp} custom={6}
-              style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '32px' }}>
 
+              {/* Add to Cart — primary: white bg, black text */}
               <Motion.button
-                whileHover={canAdd ? {
-                  scale: 1.03,
-                  boxShadow: '0 0 40px rgba(108,99,255,0.4)'
-                } : {}}
+                whileHover={canAdd ? { background: T.stone } : {}}
                 whileTap={canAdd ? { scale: 0.97 } : {}}
-                onClick={() => canAdd && addToCart.mutate({ variantId: selectedVariant.id, quantity })}                
+                onClick={() => canAdd && addToCart.mutate({ variantId: selectedVariant.id, quantity })}
                 disabled={!canAdd || addToCart.isLoading}
                 style={{
                   flex: 1, minWidth: '200px',
-                  background: canAdd
-                    ? 'linear-gradient(135deg, #6C63FF, #A78BFA)'
-                    : 'var(--bg-hover)',
-                  border: 'none', borderRadius: '16px',
+                  background: canAdd ? T.textPrimary : T.bgHover,
+                  border:     'none',
+                  borderRadius: '2px',
                   padding: '16px 32px',
-                  color: canAdd ? 'white' : 'var(--text-muted)',
-                  fontSize: '16px', fontWeight: 700,
+                  color:   canAdd ? '#0A0A0A' : T.textMuted,
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '16px', letterSpacing: '3px',
                   cursor: canAdd ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.3s',
+                  transition: 'background 0.25s',
                   display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', gap: '8px',
+                  justifyContent: 'center', gap: '10px',
                 }}
               >
                 {addToCart.isLoading ? (
-                  <Motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                  >
+                  <Motion.span animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}>
                     ⟳
                   </Motion.span>
                 ) : (
-                  <>🛒 {canAdd ? t('products.add_to_cart') : t('products.out_of_stock')}</>
+                  canAdd ? t('products.add_to_cart') : t('products.out_of_stock')
                 )}
               </Motion.button>
 
-              {/* Quick Buy */}
+              {/* Buy Now — secondary: transparent, stone border */}
               {canAdd && (
-                <Link to="/checkout" style={{ textDecoration: 'none', flex: 1, minWidth: '160px' }}>
+                <Link to="/checkout" style={{ textDecoration: 'none', flex: 1, minWidth: '140px' }}>
                   <Motion.button
-                    whileHover={{ scale: 1.03 }}
+                    whileHover={{ background: T.goldGlow, borderColor: T.gold, color: T.gold }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => addToCart.mutate({ variantId: selectedVariant.id, quantity })}                    
+                    onClick={() => addToCart.mutate({ variantId: selectedVariant.id, quantity })}
                     style={{
                       width: '100%',
                       background: 'transparent',
-                      border: '1px solid var(--border-hover)',
-                      borderRadius: '16px', padding: '16px 24px',
-                      color: 'var(--text-primary)', fontSize: '16px',
-                      fontWeight: 600, cursor: 'pointer',
+                      border: `1px solid ${T.border}`,
+                      borderRadius: '2px', padding: '16px 24px',
+                      color: T.textSecond,
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: '16px', letterSpacing: '3px',
+                      cursor: 'pointer', transition: 'all 0.25s',
                     }}
                   >
-                    ⚡ {isRTL ? 'اشتري الآن' : 'Buy Now'}
+                    {isRTL ? 'اشتري الآن' : 'BUY NOW'}
                   </Motion.button>
                 </Link>
               )}
             </Motion.div>
 
-            {/* Features */}
-            <Motion.div variants={fadeUp} custom={7} style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: '12px', marginTop: '32px',
-            }}>
+            {/* ── Trust badges ── */}
+            <Motion.div
+              variants={fadeUp} custom={7}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '1px',
+                border: `1px solid ${T.border}`,
+                borderRadius: '4px',
+                overflow: 'hidden',
+              }}
+            >
               {[
-                { icon: '🚚', label: isRTL ? 'شحن سريع' : 'Fast Delivery' },
-                { icon: '↩️', label: isRTL ? 'إرجاع مجاني' : 'Free Returns' },
-                { icon: '🔒', label: isRTL ? 'دفع آمن' : 'Secure Payment' },
+                { icon: '🚚', en: 'FAST DELIVERY', ar: 'شحن سريع' },
+                { icon: '↩',  en: 'FREE RETURNS',  ar: 'إرجاع مجاني' },
+                { icon: '🔒', en: 'SECURE PAY',     ar: 'دفع آمن' },
               ].map((feat, i) => (
                 <div key={i} style={{
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '14px', padding: '14px',
+                  background: T.bgCard,
+                  padding: '16px 12px',
                   textAlign: 'center',
+                  borderLeft: i > 0 ? `1px solid ${T.border}` : 'none',
                 }}>
-                  <div style={{ fontSize: '24px', marginBottom: '6px' }}>{feat.icon}</div>
+                  <div style={{ fontSize: '20px', marginBottom: '6px' }}>{feat.icon}</div>
                   <div style={{
-                    fontSize: '12px', fontWeight: 700,
-                    color: 'var(--text-secondary)',
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: '10px', letterSpacing: '2px',
+                    color: T.textMuted,
                   }}>
-                    {feat.label}
+                    {isRTL ? feat.ar : feat.en}
                   </div>
                 </div>
               ))}

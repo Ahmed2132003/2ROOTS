@@ -6,83 +6,81 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
 import { getPreferredCartVariant, useAddToCartMutation } from '../hooks/useCartActions';
 
+/* ─── Design Tokens ────────────────────────────────────────────────────────── */
+const TOKENS = {
+  bg:          '#0A0A0A',
+  bgCard:      '#111111',
+  bgHover:     '#1A1A1A',
+  border:      'rgba(216,210,194,0.12)',   // --accent-stone at 12%
+  borderHover: 'rgba(184,155,94,0.5)',     // gold
+  textPrimary: '#FFFFFF',
+  textSecond:  '#D9D9D9',
+  textMuted:   'rgba(217,217,217,0.45)',
+  stone:       '#D8D2C2',
+  gold:        '#B89B5E',
+  goldGlow:    'rgba(184,155,94,0.10)',
+  green:       '#2F4F3E',
+  success:     '#4CAF50',
+};
+
+/* ─── Constants ─────────────────────────────────────────────────────────────── */
 const DEFAULT_FILTERS = {
-  category: '',
+  category:  '',
   min_price: '',
   max_price: '',
-  in_stock: false,
-  search: '',
-  ordering: '-created_at',
+  in_stock:  false,
+  search:    '',
+  ordering:  '-created_at',
 };
 
 const FALLBACK_IMAGE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%2318192a'/%3E%3Ctext x='50%25' y='50%25' fill='%239aa0c4' font-size='34' text-anchor='middle' dominant-baseline='middle' font-family='Arial, sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'%3E%3Crect width='800' height='600' fill='%230A0A0A'/%3E%3Ctext x='50%25' y='50%25' fill='%23D8D2C2' font-size='28' text-anchor='middle' dominant-baseline='middle' font-family='Arial,sans-serif' letter-spacing='4'%3ENO IMAGE%3C/text%3E%3C/svg%3E";
 
+/* ─── Image resolver ─────────────────────────────────────────────────────────── */
 function resolveProductImageUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return FALLBACK_IMAGE;
-
   const trimmedUrl = rawUrl.trim();
   if (!trimmedUrl) return FALLBACK_IMAGE;
-
-  if (
-    /^https?:\/\//i.test(trimmedUrl) ||
-    trimmedUrl.startsWith('data:') ||
-    trimmedUrl.startsWith('blob:')
-  ) {
+  if (/^https?:\/\//i.test(trimmedUrl) || trimmedUrl.startsWith('data:') || trimmedUrl.startsWith('blob:'))
     return trimmedUrl;
-  }
-
   const configuredOrigin = import.meta.env.VITE_API_ORIGIN?.trim();
   const apiBaseUrl = typeof api?.defaults?.baseURL === 'string' ? api.defaults.baseURL : '';
   const absoluteBaseMatch = apiBaseUrl.match(/^https?:\/\/[^/]+/i);
-
-  // نستخدم backend origin بشكل صح - مش window.location.origin لأنه frontend port
-  const backendOrigin =
-    configuredOrigin ||
-    absoluteBaseMatch?.[0] ||
-    'http://localhost:8080';
-
+  const backendOrigin = configuredOrigin || absoluteBaseMatch?.[0] || 'http://localhost:8080';
   const mediaBase = import.meta.env.VITE_MEDIA_BASE_URL || `${backendOrigin}/media/`;
-
-  if (trimmedUrl.startsWith('/')) {
-    return `${backendOrigin}${trimmedUrl}`;
-  }
-
+  if (trimmedUrl.startsWith('/')) return `${backendOrigin}${trimmedUrl}`;
   return `${mediaBase.replace(/\/+$/, '')}/${trimmedUrl.replace(/^\/+/, '')}`;
 }
 
+/* ─── Motion variants ────────────────────────────────────────────────────────── */
 const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
+  hidden:  { opacity: 0, y: 24 },
   visible: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] },
+    opacity: 1, y: 0,
+    transition: { duration: 0.55, delay: i * 0.055, ease: [0.16, 1, 0.3, 1] },
   }),
 };
-
 const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.06 } },
+  hidden:  {},
+  visible: { transition: { staggerChildren: 0.055 } },
 };
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   PRODUCT CARD
+══════════════════════════════════════════════════════════════════════════════ */
 function ProductCard({ product, index, t, onAddToCart }) {
-  const [adding, setAdding] = useState(false);
+  const [adding,     setAdding]     = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [hovered,    setHovered]    = useState(false);
 
   const preferredImage = useMemo(() => {
-    if (Array.isArray(product?.images) && product.images.length > 0) {
-      return product.images.find((img) => img?.is_main)?.image || product.images[0]?.image;
-    }
-
+    if (Array.isArray(product?.images) && product.images.length > 0)
+      return product.images.find(img => img?.is_main)?.image || product.images[0]?.image;
     return product?.main_image || product?.image || product?.imageUrl || '';
   }, [product]);
 
-  const imageSrc = useMemo(() => {
-    if (imageError) return FALLBACK_IMAGE;
-    return resolveProductImageUrl(preferredImage);
-  }, [imageError, preferredImage]);
-
-  const isSoldOut = product.is_sold_out || product.stock_status === 'sold_out' || !product.in_stock;
+  const imageSrc   = useMemo(() => imageError ? FALLBACK_IMAGE : resolveProductImageUrl(preferredImage), [imageError, preferredImage]);
+  const isSoldOut  = product.is_sold_out || product.stock_status === 'sold_out' || !product.in_stock;
   const hasDiscount = product.discount_is_active && product.discounted_price != null;
   const discountPct = Number(product.discount_percentage || 0);
 
@@ -92,7 +90,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
     if (isSoldOut || adding) return;
     setAdding(true);
     await onAddToCart(product);
-    setTimeout(() => setAdding(false), 800);
+    setTimeout(() => setAdding(false), 900);
   };
 
   return (
@@ -100,177 +98,182 @@ function ProductCard({ product, index, t, onAddToCart }) {
       layout
       variants={fadeUp}
       custom={index}
-      whileHover={{ y: -6, borderColor: 'var(--accent)' }}      
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      whileHover={{ y: -5 }}
       style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: '20px',
-        overflow: 'hidden',
-        position: 'relative',
-        transition: 'border-color 0.3s',
-      }}      
+        background:    TOKENS.bgCard,
+        border:        `1px solid ${hovered ? TOKENS.borderHover : TOKENS.border}`,
+        borderRadius:  '4px',
+        overflow:      'hidden',
+        position:      'relative',
+        transition:    'border-color 0.35s ease',
+        cursor:        'pointer',
+      }}
     >
-      <Link to={`/products/${product.slug}`} style={{ textDecoration: 'none' }}>
-        <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '4/3' }}>
+      <Link to={`/products/${product.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+
+        {/* ── Image ── */}
+        <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '3/4' }}>
           <Motion.img
             src={imageSrc}
             alt={product.name}
-            whileHover={{ scale: 1.08 }}
-            transition={{ duration: 0.5 }}
+            animate={{ scale: hovered ? 1.06 : 1 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             onError={() => setImageError(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
 
+          {/* Dark vignette on hover */}
+          <Motion.div
+            animate={{ opacity: hovered ? 1 : 0 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* Featured badge */}
           {product.is_featured && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '12px',
-                left: '12px',
-                background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-                color: 'white',
-                borderRadius: '8px',
-                padding: '4px 12px',
-                fontSize: '14px',                
-                fontWeight: 700,
-                letterSpacing: '1px',
-              }}
-            >
-              ✦ FEATURED
+            <div style={{
+              position: 'absolute', top: '12px', left: '12px',
+              background: TOKENS.green,
+              color: TOKENS.stone,
+              borderRadius: '2px',
+              padding: '4px 10px',
+              fontSize: '10px',
+              fontFamily: "'Bebas Neue', sans-serif",
+              letterSpacing: '2px',
+            }}>
+              FEATURED
             </div>
           )}
 
+          {/* Discount badge */}
           {hasDiscount && !isSoldOut && (
-            <div
-              style={{
-                position: 'absolute',
-                top: product.is_featured ? '44px' : '12px',
-                left: '12px',
-                background: 'linear-gradient(135deg,#ef4444,#dc2626)',
-                color: '#fff',
-                borderRadius: '8px',
-                padding: '6px 12px',
-                fontSize: '13px',                
-                border: '1px solid rgba(255,255,255,0.3)',
-                boxShadow: '0 10px 24px rgba(220,38,38,0.35)',                                
-                fontWeight: 800,
-              }}
-            >
+            <div style={{
+              position: 'absolute',
+              top: product.is_featured ? '40px' : '12px',
+              left: '12px',
+              background: '#B91C1C',
+              color: '#fff',
+              borderRadius: '2px',
+              padding: '4px 10px',
+              fontSize: '11px',
+              fontFamily: "'Bebas Neue', sans-serif",
+              letterSpacing: '1.5px',
+            }}>
               -{discountPct}%
             </div>
           )}
 
+          {/* Sold out overlay */}
           {isSoldOut && (
-            <div
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'rgba(0,0,0,0.65)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <span style={{
+                color: TOKENS.stone,
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: '18px',
+                letterSpacing: '4px',
+              }}>
+                {t('products.out_of_stock')}
+              </span>
+            </div>
+          )}
+
+          {/* Quick-add button — slides up on hover */}
+          {!isSoldOut && (
+            <Motion.button
+              onClick={handleAdd}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: hovered ? 0 : 20, opacity: hovered ? 1 : 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              whileTap={{ scale: 0.95 }}
               style={{
                 position: 'absolute',
-                inset: 0,
-                background: 'rgba(0,0,0,0.55)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 700,
-                fontSize: '15px',
-                letterSpacing: '1px',
+                bottom: '12px', left: '12px', right: '12px',
+                background: adding ? TOKENS.green : TOKENS.textPrimary,
+                border: 'none',
+                borderRadius: '2px',
+                padding: '12px',
+                color: adding ? TOKENS.stone : '#0A0A0A',
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: '14px',
+                letterSpacing: '3px',
+                cursor: 'pointer',
+                transition: 'background 0.3s',
               }}
             >
-              {t('products.out_of_stock')}
-            </div>
+              {adding ? '✓ ADDED' : 'ADD TO CART'}
+            </Motion.button>
           )}
         </div>
 
-        <div style={{ padding: '20px' }}>
-          <div
-            style={{
-              fontSize: '14px',              
-              color: 'var(--accent)',
-              fontWeight: 700,
-              marginBottom: '8px',
-              letterSpacing: '1.5px',
-              textTransform: 'uppercase',
-            }}
-          >
+        {/* ── Info ── */}
+        <div style={{ padding: '16px 16px 20px' }}>
+          {/* Category */}
+          <div style={{
+            fontSize: '10px',
+            color: TOKENS.textMuted,
+            fontFamily: "'Bebas Neue', sans-serif",
+            letterSpacing: '3px',
+            marginBottom: '6px',
+            textTransform: 'uppercase',
+          }}>
             {product.category?.name}
           </div>
 
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: '15px',
-              color: 'var(--text-primary)',
-              marginBottom: '16px',
-              lineHeight: 1.4,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
+          {/* Name */}
+          <div style={{
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 500,
+            fontSize: '14px',
+            color: TOKENS.textSecond,
+            marginBottom: '14px',
+            lineHeight: 1.45,
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            letterSpacing: '0.2px',
+          }}>
             {product.name}
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: '22px',
-                  lineHeight: 1.1,
-                  fontWeight: 900,                  
-                  background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                {hasDiscount
-                  ? Number(product.discounted_price).toLocaleString()
-                  : Number(product.base_price).toLocaleString()} {t('common.egp')}
-              </div>
-              {hasDiscount && (
-                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textDecoration: 'line-through', textDecorationThickness: '1.6px', fontWeight: 600, letterSpacing: '0.15px', marginInlineEnd: '8px' }}>                  
-                  {Number(product.base_price).toLocaleString()} {t('common.egp')}
-                </div>
-              )}
-            </div>
+          {/* Price row */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+            <span style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: '22px',
+              letterSpacing: '1px',
+              color: hasDiscount ? TOKENS.gold : TOKENS.textPrimary,
+              lineHeight: 1,
+            }}>
+              {hasDiscount
+                ? Number(product.discounted_price).toLocaleString()
+                : Number(product.base_price).toLocaleString()}{' '}
+              <span style={{ fontSize: '13px', letterSpacing: '2px', color: TOKENS.textMuted }}>
+                {t('common.egp')}
+              </span>
+            </span>
 
-            <Motion.button
-              onClick={handleAdd}
-              whileHover={{ scale: !isSoldOut ? 1.1 : 1 }}
-              whileTap={{ scale: !isSoldOut ? 0.9 : 1 }}
-              animate={adding ? { rotate: [0, -10, 10, 0] } : {}}
-              style={{
-                width: '40px',
-                height: '40px',
-                background: adding
-                  ? 'var(--success)'
-                  : !isSoldOut
-                    ? 'var(--accent-glow)'
-                    : 'var(--bg-hover)',
-                border: `1px solid ${
-                  adding
-                    ? 'var(--success)'
-                    : !isSoldOut
-                      ? 'var(--accent)'
-                      : 'var(--border)'
-                }`,
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                cursor: !isSoldOut ? 'pointer' : 'not-allowed',
-                transition: 'background 0.3s, border 0.3s',
-                flexShrink: 0,
-              }}
-            >
-              {adding ? '✓' : '🛒'}
-            </Motion.button>
+            {hasDiscount && (
+              <span style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '12px',
+                color: TOKENS.textMuted,
+                textDecoration: 'line-through',
+                fontWeight: 400,
+              }}>
+                {Number(product.base_price).toLocaleString()}
+              </span>
+            )}
           </div>
         </div>
       </Link>
@@ -278,37 +281,40 @@ function ProductCard({ product, index, t, onAddToCart }) {
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   SKELETON CARD
+══════════════════════════════════════════════════════════════════════════════ */
 function SkeletonCard() {
   return (
     <Motion.div
-      animate={{ opacity: [0.5, 1, 0.5] }}
-      transition={{ duration: 1.5, repeat: Infinity }}
+      animate={{ opacity: [0.4, 0.7, 0.4] }}
+      transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
       style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: '20px',
-        overflow: 'hidden',
+        background:   TOKENS.bgCard,
+        border:       `1px solid ${TOKENS.border}`,
+        borderRadius: '4px',
+        overflow:     'hidden',
       }}
     >
-      <div style={{ height: '200px', background: 'var(--bg-hover)' }} />
-      <div style={{ padding: '20px' }}>
-        {[40, 70, 30].map((w, i) => (
-          <div
-            key={i}
-            style={{
-              height: i === 1 ? '18px' : '14px',
-              width: `${w}%`,
-              background: 'var(--bg-hover)',
-              borderRadius: '8px',
-              marginBottom: i < 2 ? '12px' : 0,
-            }}
-          />
+      <div style={{ aspectRatio: '3/4', background: TOKENS.bgHover }} />
+      <div style={{ padding: '16px' }}>
+        {[35, 75, 45].map((w, i) => (
+          <div key={i} style={{
+            height: i === 1 ? '14px' : '11px',
+            width: `${w}%`,
+            background: TOKENS.bgHover,
+            borderRadius: '2px',
+            marginBottom: i < 2 ? '10px' : 0,
+          }} />
         ))}
       </div>
     </Motion.div>
   );
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   FILTER PANEL
+══════════════════════════════════════════════════════════════════════════════ */
 function FilterPanel({ filters, setFilters, categories, t, isRTL, onClose, isMobile }) {
   const categoryList = Array.isArray(categories)
     ? categories
@@ -316,192 +322,183 @@ function FilterPanel({ filters, setFilters, categories, t, isRTL, onClose, isMob
       ? categories.results
       : [];
 
+  const inputStyle = {
+    flex: 1,
+    background: TOKENS.bg,
+    border: `1px solid ${TOKENS.border}`,
+    borderRadius: '2px',
+    padding: '9px 12px',
+    color: TOKENS.textPrimary,
+    fontSize: '13px',
+    outline: 'none',
+    fontFamily: "'Inter', sans-serif",
+  };
+
   const content = (
-    <div
-      style={{
-        background: isMobile ? 'var(--bg-secondary)' : 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: isMobile ? '24px 24px 0 0' : '20px',
-        padding: '28px',
-        position: isMobile ? 'fixed' : 'sticky',
-        bottom: isMobile ? 0 : 'auto',
-        left: isMobile ? 0 : 'auto',
-        right: isMobile ? 0 : 'auto',
-        top: isMobile ? 'auto' : '90px',
-        zIndex: isMobile ? 200 : 1,
-        maxHeight: isMobile ? '80vh' : 'calc(100vh - 110px)',
-        overflowY: 'auto',
-        width: '100%',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '28px',
-        }}
-      >
-        <h3 style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)' }}>{t('products.filter')}</h3>
+    <div style={{
+      background:   isMobile ? '#0D0D0D' : TOKENS.bgCard,
+      border:       `1px solid ${TOKENS.border}`,
+      borderRadius: isMobile ? '12px 12px 0 0' : '4px',
+      padding:      '28px 24px',
+      position:     isMobile ? 'fixed' : 'sticky',
+      bottom:       isMobile ? 0 : 'auto',
+      left:         isMobile ? 0 : 'auto',
+      right:        isMobile ? 0 : 'auto',
+      top:          isMobile ? 'auto' : '90px',
+      zIndex:       isMobile ? 200 : 1,
+      maxHeight:    isMobile ? '80vh' : 'calc(100vh - 110px)',
+      overflowY:    'auto',
+      width:        '100%',
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+        <div style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: '20px',
+          letterSpacing: '4px',
+          color: TOKENS.textPrimary,
+        }}>
+          {t('products.filter')}
+        </div>
         {isMobile && (
-          <button
-            onClick={onClose}
-            style={{
-              background: 'var(--bg-hover)',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '6px 12px',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              fontSize: '18px',
-            }}
-          >
-            ✕
-          </button>
+          <button onClick={onClose} style={{
+            background: TOKENS.bgHover, border: `1px solid ${TOKENS.border}`,
+            borderRadius: '2px', padding: '6px 12px',
+            color: TOKENS.textSecond, cursor: 'pointer', fontSize: '16px',
+          }}>✕</button>
         )}
       </div>
 
-      <div style={{ marginBottom: '28px' }}>
-        <div
-          style={{
-            fontSize: '14px',            
-            fontWeight: 700,
-            letterSpacing: '2px',
-            color: 'var(--text-muted)',
-            marginBottom: '14px',
-            textTransform: 'uppercase',
-          }}
-        >
+      {/* Categories */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: '12px', letterSpacing: '3px',
+          color: TOKENS.textMuted, marginBottom: '14px',
+        }}>
           {t('home.categories')}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {[{ slug: '', name: isRTL ? 'الكل' : 'All' }, ...categoryList].map((cat) => (
-            <Motion.button
-              key={cat.slug || 'all'}
-              whileHover={{ x: isRTL ? -4 : 4 }}
-              onClick={() => setFilters((f) => ({ ...f, category: cat.slug }))}
-              style={{
-                background: filters.category === cat.slug ? 'var(--accent-glow)' : 'transparent',
-                border:
-                  filters.category === cat.slug ? '1px solid var(--accent)' : '1px solid transparent',
-                borderRadius: '12px',
-                padding: '10px 14px',
-                color: filters.category === cat.slug ? 'var(--accent)' : 'var(--text-secondary)',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '14px',
-                textAlign: isRTL ? 'right' : 'left',
-                width: '100%',
-                transition: 'all 0.2s',
-              }}
-            >
-              {cat.name}
-            </Motion.button>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {[{ slug: '', name: isRTL ? 'الكل' : 'ALL' }, ...categoryList].map((cat) => {
+            const active = filters.category === cat.slug;
+            return (
+              <Motion.button
+                key={cat.slug || 'all'}
+                whileHover={{ x: isRTL ? -3 : 3 }}
+                onClick={() => setFilters(f => ({ ...f, category: cat.slug }))}
+                style={{
+                  background:  active ? TOKENS.goldGlow : 'transparent',
+                  border:      `1px solid ${active ? TOKENS.gold : 'transparent'}`,
+                  borderRadius: '2px',
+                  padding:     '9px 12px',
+                  color:       active ? TOKENS.gold : TOKENS.textSecond,
+                  cursor:      'pointer',
+                  fontFamily:  "'Inter', sans-serif",
+                  fontWeight:  active ? 600 : 400,
+                  fontSize:    '13px',
+                  textAlign:   isRTL ? 'right' : 'left',
+                  width:       '100%',
+                  letterSpacing: active ? '0.5px' : 0,
+                  transition:  'all 0.2s',
+                }}
+              >
+                {active && (
+                  <span style={{ marginRight: isRTL ? 0 : '8px', marginLeft: isRTL ? '8px' : 0, color: TOKENS.gold }}>—</span>
+                )}
+                {cat.name}
+              </Motion.button>
+            );
+          })}
         </div>
       </div>
 
-      <div style={{ marginBottom: '28px' }}>
-        <div
-          style={{
-            fontSize: '14px',            
-            fontWeight: 700,
-            letterSpacing: '2px',
-            color: 'var(--text-muted)',
-            marginBottom: '14px',
-            textTransform: 'uppercase',
-          }}
-        >
+      {/* Divider */}
+      <div style={{ height: '1px', background: TOKENS.border, marginBottom: '32px' }} />
+
+      {/* Price */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: '12px', letterSpacing: '3px',
+          color: TOKENS.textMuted, marginBottom: '14px',
+        }}>
           {t('products.price')}
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           {[
-            { key: 'min_price', placeholder: isRTL ? 'من' : 'Min' },
-            { key: 'max_price', placeholder: isRTL ? 'إلى' : 'Max' },
+            { key: 'min_price', placeholder: isRTL ? 'من' : 'MIN' },
+            { key: 'max_price', placeholder: isRTL ? 'إلى' : 'MAX' },
           ].map(({ key, placeholder }) => (
             <input
               key={key}
               type="number"
               placeholder={placeholder}
               value={filters[key]}
-              onChange={(e) => setFilters((f) => ({ ...f, [key]: e.target.value }))}
-              style={{
-                flex: 1,
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                padding: '10px 14px',
-                color: 'var(--text-primary)',
-                fontSize: '14px',
-                outline: 'none',
-              }}
+              onChange={e => setFilters(f => ({ ...f, [key]: e.target.value }))}
+              style={inputStyle}
+              onFocus={e  => { e.target.style.borderColor = TOKENS.gold; }}
+              onBlur={e   => { e.target.style.borderColor = TOKENS.border; }}
             />
           ))}
         </div>
       </div>
 
-      <div style={{ marginBottom: '28px' }}>
+      {/* Divider */}
+      <div style={{ height: '1px', background: TOKENS.border, marginBottom: '32px' }} />
+
+      {/* In stock */}
+      <div style={{ marginBottom: '32px' }}>
         <Motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={() => setFilters((f) => ({ ...f, in_stock: !f.in_stock }))}
+          onClick={() => setFilters(f => ({ ...f, in_stock: !f.in_stock }))}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            width: '100%',
-            padding: 0,
+            display: 'flex', alignItems: 'center', gap: '12px',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            width: '100%', padding: 0,
           }}
         >
-          <div
-            style={{
-              width: '22px',
-              height: '22px',
-              background: filters.in_stock ? 'var(--accent)' : 'var(--bg-primary)',
-              border: `2px solid ${filters.in_stock ? 'var(--accent)' : 'var(--border)'}`,
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s',
-              flexShrink: 0,
-            }}
-          >
+          <div style={{
+            width: '18px', height: '18px',
+            background:   filters.in_stock ? TOKENS.gold : 'transparent',
+            border:       `1.5px solid ${filters.in_stock ? TOKENS.gold : TOKENS.border}`,
+            borderRadius: '2px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, transition: 'all 0.2s',
+          }}>
             {filters.in_stock && (
-              <Motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                style={{ color: 'white', fontSize: '12px', fontWeight: 700 }}
-              >
-                ✓
-              </Motion.span>
+              <Motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
+                style={{ color: '#0A0A0A', fontSize: '11px', fontWeight: 700 }}>✓</Motion.span>
             )}
           </div>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '14px' }}>
+          <span style={{
+            fontFamily: "'Inter', sans-serif",
+            color: TOKENS.textSecond, fontWeight: 400, fontSize: '13px',
+          }}>
             {t('products.in_stock')}
           </span>
         </Motion.button>
       </div>
 
+      {/* Reset */}
       <Motion.button
-        whileHover={{ scale: 1.02 }}
+        whileHover={{ borderColor: TOKENS.stone }}
         whileTap={{ scale: 0.97 }}
         onClick={() => setFilters(DEFAULT_FILTERS)}
         style={{
           width: '100%',
-          background: 'var(--bg-hover)',
-          border: '1px solid var(--border)',
-          borderRadius: '14px',
-          padding: '12px',
-          color: 'var(--text-secondary)',
-          cursor: 'pointer',
-          fontWeight: 600,
-          fontSize: '14px',
+          background:   'transparent',
+          border:       `1px solid ${TOKENS.border}`,
+          borderRadius: '2px',
+          padding:      '11px',
+          color:        TOKENS.textMuted,
+          cursor:       'pointer',
+          fontFamily:   "'Bebas Neue', sans-serif",
+          fontSize:     '13px',
+          letterSpacing: '2px',
+          transition:   'border-color 0.2s, color 0.2s',
         }}
       >
-        {isRTL ? '↺ إعادة ضبط' : '↺ Reset Filters'}
+        {isRTL ? 'إعادة الضبط' : 'RESET FILTERS'}
       </Motion.button>
     </div>
   );
@@ -510,23 +507,15 @@ function FilterPanel({ filters, setFilters, categories, t, isRTL, onClose, isMob
     return (
       <AnimatePresence>
         <Motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          key="overlay"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 199,
-          }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 199 }}
         />
         <Motion.div
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          key="panel"
+          initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 30, stiffness: 280 }}
           style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200 }}
         >
           {content}
@@ -538,28 +527,33 @@ function FilterPanel({ filters, setFilters, categories, t, isRTL, onClose, isMob
   return content;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   MAIN PAGE
+══════════════════════════════════════════════════════════════════════════════ */
 export default function Products() {
   const { i18n } = useTranslation();
-  
-    const t = (key) => {
-    const messages = {
-      'products.out_of_stock': isRTL ? 'نفد المخزون' : 'Out of stock',
-      'common.egp': isRTL ? 'ج.م' : 'EGP',
-      'products.filter': isRTL ? 'الفلاتر' : 'Filters',
-      'home.categories': isRTL ? 'التصنيفات' : 'Categories',
-      'products.price': isRTL ? 'السعر' : 'Price',
-      'products.in_stock': isRTL ? 'المتوفر فقط' : 'In stock only',
-      'nav.products': isRTL ? 'المنتجات' : 'Products',
-      'products.title': isRTL ? 'كل المنتجات' : 'All Products',
-      'products.search': isRTL ? 'ابحث عن منتجات...' : 'Search products...',
-      'products.no_products': isRTL ? 'لا توجد منتجات' : 'No products found',
-    };
-    return messages[key] ?? key;
-  };
   const isRTL = i18n.language === 'ar';
+
+  /* ── Inline translation shim ── */
+  const t = (key) => {
+    const map = {
+      'products.out_of_stock': isRTL ? 'نفد المخزون' : 'OUT OF STOCK',
+      'common.egp':            isRTL ? 'ج.م' : 'EGP',
+      'products.filter':       isRTL ? 'الفلاتر' : 'FILTERS',
+      'home.categories':       isRTL ? 'التصنيفات' : 'CATEGORIES',
+      'products.price':        isRTL ? 'السعر' : 'PRICE',
+      'products.in_stock':     isRTL ? 'المتوفر فقط' : 'In stock only',
+      'nav.products':          isRTL ? 'المنتجات' : 'COLLECTION',
+      'products.title':        isRTL ? 'كل المنتجات' : 'ALL PRODUCTS',
+      'products.search':       isRTL ? 'ابحث عن منتجات...' : 'Search products...',
+      'products.no_products':  isRTL ? 'لا توجد منتجات' : 'NO PRODUCTS FOUND',
+    };
+    return map[key] ?? key;
+  };
+
   const [searchParams] = useSearchParams();
   const [filterOpen, setFilterOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [isMobile,   setIsMobile]   = useState(window.innerWidth < 1024);
 
   const [filters, setFilters] = useState({
     ...DEFAULT_FILTERS,
@@ -573,262 +567,247 @@ export default function Products() {
   }, []);
 
   const queryParams = useMemo(() => {
-    const params = new URLSearchParams();
-    if (filters.category) params.set('category', filters.category);
-    if (filters.min_price) params.set('min_price', filters.min_price);
-    if (filters.max_price) params.set('max_price', filters.max_price);
-    if (filters.in_stock) params.set('in_stock', 'true');
-    if (filters.search) params.set('search', filters.search);
-    if (filters.ordering) params.set('ordering', filters.ordering);
-    return params.toString();
+    const p = new URLSearchParams();
+    if (filters.category)  p.set('category',  filters.category);
+    if (filters.min_price) p.set('min_price',  filters.min_price);
+    if (filters.max_price) p.set('max_price',  filters.max_price);
+    if (filters.in_stock)  p.set('in_stock',   'true');
+    if (filters.search)    p.set('search',     filters.search);
+    if (filters.ordering)  p.set('ordering',   filters.ordering);
+    return p.toString();
   }, [filters]);
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ['products', queryParams],
-    queryFn: () => api.get(`/products/items/?${queryParams}`).then((r) => r.data),
+    queryFn:  () => api.get(`/products/items/?${queryParams}`).then(r => r.data),
     keepPreviousData: true,
   });
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => api.get('/products/').then((r) => r.data),
+    queryFn:  () => api.get('/products/').then(r => r.data),
   });
 
   const addToCart = useAddToCartMutation();
-
   const handleAddToCart = async (product) => {
     const variant = getPreferredCartVariant(product);
     if (!variant?.id) return;
-    
     try {
-      await addToCart.mutateAsync({ variantId: variant.id, quantity: 1 });         
-    } catch (error) {
-      console.error('Failed to add product to cart from listing:', error);
+      await addToCart.mutateAsync({ variantId: variant.id, quantity: 1 });
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
     }
   };
 
   const products = productsData?.results || productsData || [];
   const sortOptions = [
-    { value: '-created_at', label: isRTL ? 'الأحدث' : 'Newest' },
-    { value: 'base_price', label: isRTL ? 'السعر: الأقل' : 'Price: Low to High' },
-    { value: '-base_price', label: isRTL ? 'السعر: الأعلى' : 'Price: High to Low' },
+    { value: '-created_at', label: isRTL ? 'الأحدث' : 'NEWEST' },
+    { value: 'base_price',  label: isRTL ? 'السعر: الأقل' : 'PRICE: LOW' },
+    { value: '-base_price', label: isRTL ? 'السعر: الأعلى' : 'PRICE: HIGH' },
   ];
 
+  /* ── shared select / input styles ── */
+  const controlBase = {
+    background:   TOKENS.bgCard,
+    border:       `1px solid ${TOKENS.border}`,
+    borderRadius: '2px',
+    color:        TOKENS.textPrimary,
+    fontSize:     '13px',
+    outline:      'none',
+    fontFamily:   "'Inter', sans-serif",
+  };
+
   return (
-    <div style={{ minHeight: '100vh', padding: '40px 5%' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ minHeight: '100vh', background: TOKENS.bg, paddingTop: '40px', paddingBottom: '80px' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 5%' }}>
+
+        {/* ── Page header ── */}
         <Motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          style={{ marginBottom: '40px' }}
+          style={{ marginBottom: '48px' }}
         >
-          <div
-            style={{
-              fontSize: '14px',              
-              color: 'var(--accent)',
-              fontWeight: 700,
-              letterSpacing: '3px',
-              marginBottom: '12px',
-              textTransform: 'uppercase',
-            }}
-          >
+          {/* eyebrow */}
+          <div style={{
+            fontFamily:    "'Bebas Neue', sans-serif",
+            fontSize:      '12px',
+            color:         TOKENS.stone,
+            letterSpacing: '5px',
+            marginBottom:  '12px',
+          }}>
             ✦ {t('nav.products')}
           </div>
-          <h1
-            style={{
-              fontSize: 'clamp(32px, 5vw, 56px)',
-              fontWeight: 800,
-              color: 'var(--text-primary)',
-              fontFamily: "'Syne', 'Cairo', sans-serif",
-            }}
-          >
+
+          {/* headline */}
+          <h1 style={{
+            fontFamily:    "'Bebas Neue', sans-serif",
+            fontSize:      'clamp(40px, 7vw, 80px)',
+            fontWeight:    400,
+            color:         TOKENS.textPrimary,
+            lineHeight:    0.95,
+            letterSpacing: '3px',
+            margin:        0,
+          }}>
             {t('products.title')}
           </h1>
         </Motion.div>
 
+        {/* ── Search + Sort toolbar ── */}
         <Motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           style={{
-            display: 'flex',
-            gap: '12px',
-            marginBottom: '32px',
-            flexWrap: 'wrap',
+            display:       'flex',
+            gap:           '10px',
+            marginBottom:  '40px',
+            flexWrap:      'wrap',
           }}
         >
-          <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
-            <span
-              style={{
-                position: 'absolute',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                [isRTL ? 'right' : 'left']: '16px',
-                color: 'var(--text-muted)',
-                fontSize: '18px',
-                pointerEvents: 'none',
-              }}
-            >
-              🔍
+          {/* Search */}
+          <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
+            <span style={{
+              position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+              [isRTL ? 'right' : 'left']: '14px',
+              color: TOKENS.textMuted, fontSize: '14px', pointerEvents: 'none',
+            }}>
+              ⌕
             </span>
             <input
               type="text"
               placeholder={t('products.search')}
               value={filters.search}
-              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+              onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+              onFocus={e  => { e.target.style.borderColor = TOKENS.stone; }}
+              onBlur={e   => { e.target.style.borderColor = TOKENS.border; }}
               style={{
-                width: '100%',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: '14px',
-                padding: isRTL ? '14px 48px 14px 16px' : '14px 16px 14px 48px',
-                color: 'var(--text-primary)',
-                fontSize: '15px',
-                outline: 'none',
+                ...controlBase,
+                width:   '100%',
+                padding: isRTL ? '13px 42px 13px 14px' : '13px 14px 13px 42px',
+                boxSizing: 'border-box',
                 transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = 'var(--accent)';
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'var(--border)';
               }}
             />
           </div>
 
+          {/* Sort */}
           <select
             value={filters.ordering}
-            onChange={(e) => setFilters((f) => ({ ...f, ordering: e.target.value }))}
+            onChange={e => setFilters(f => ({ ...f, ordering: e.target.value }))}
             style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: '14px',
-              padding: '14px 20px',
-              color: 'var(--text-primary)',
-              fontSize: '14px',
-              cursor: 'pointer',
-              outline: 'none',
-              fontWeight: 600,
-              minWidth: '180px',
+              ...controlBase,
+              padding:   '13px 20px',
+              minWidth:  '160px',
+              cursor:    'pointer',
+              fontFamily: "'Bebas Neue', sans-serif",
+              letterSpacing: '1.5px',
             }}
           >
-            {sortOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
+            {sortOptions.map(opt => (
+              <option key={opt.value} value={opt.value} style={{ background: TOKENS.bgCard }}>
                 {opt.label}
               </option>
             ))}
           </select>
 
+          {/* Mobile filter toggle */}
           {isMobile && (
             <Motion.button
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => setFilterOpen(true)}
               style={{
-                background: 'var(--accent-glow)',
-                border: '1px solid var(--accent)',
-                borderRadius: '14px',
-                padding: '14px 20px',
-                color: 'var(--accent)',
-                fontWeight: 700,
-                fontSize: '14px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                ...controlBase,
+                padding:  '13px 20px',
+                cursor:   'pointer',
+                fontFamily: "'Bebas Neue', sans-serif",
+                letterSpacing: '2px',
+                border:  `1px solid ${TOKENS.stone}`,
+                color:   TOKENS.stone,
               }}
             >
-              ⚙️ {t('products.filter')}
+              ☰ {t('products.filter')}
             </Motion.button>
           )}
         </Motion.div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '260px 1fr',
-            gap: '32px',
-            alignItems: 'start',
-          }}
-        >
+        {/* ── Two-column layout: sidebar + grid ── */}
+        <div style={{
+          display:             'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '220px 1fr',
+          gap:                 '40px',
+          alignItems:          'start',
+        }}>
+          {/* Sidebar — left for LTR, right for RTL */}
           {!isMobile && !isRTL && (
-            <FilterPanel filters={filters} setFilters={setFilters} categories={categories} t={t} isRTL={isRTL} />
+            <FilterPanel filters={filters} setFilters={setFilters}
+              categories={categories} t={t} isRTL={isRTL} />
           )}
 
+          {/* Products area */}
           <div>
-            <div
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: '14px',
-                marginBottom: '24px',
-                fontWeight: 600,
-              }}
-            >
-              {isLoading ? '...' : `${products.length} ${isRTL ? 'منتج' : 'products'}`}
+            {/* Count label */}
+            <div style={{
+              fontFamily:   "'Bebas Neue', sans-serif",
+              color:        TOKENS.textMuted,
+              fontSize:     '12px',
+              letterSpacing: '3px',
+              marginBottom: '24px',
+            }}>
+              {isLoading ? '—' : `${products.length} ${isRTL ? 'منتج' : 'PRODUCTS'}`}
             </div>
 
+            {/* States */}
             {isLoading ? (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                  gap: '20px',
-                }}
-              >
-                {[...Array(6)].map((_, i) => (
-                  <SkeletonCard key={i} />
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
               </div>
+
             ) : products.length === 0 ? (
               <Motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{
-                  textAlign: 'center',
-                  padding: '80px 20px',
-                  color: 'var(--text-muted)',
-                }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                style={{ textAlign: 'center', padding: '100px 20px' }}
               >
-                <div style={{ fontSize: '64px', marginBottom: '16px' }}>🔍</div>
-                <div
-                  style={{
-                    fontSize: '20px',
-                    fontWeight: 700,
-                    marginBottom: '8px',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
+                <div style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: '64px', letterSpacing: '4px',
+                  color: TOKENS.textMuted, marginBottom: '16px',
+                }}>
                   {t('products.no_products')}
                 </div>
+                <div style={{
+                  fontFamily: "'Inter', sans-serif",
+                  color: TOKENS.textMuted, fontSize: '14px', marginBottom: '32px',
+                }}>
+                  {isRTL ? 'جرّب تعديل الفلتر' : 'Try adjusting your filters.'}
+                </div>
                 <Motion.button
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ borderColor: TOKENS.stone, color: TOKENS.stone }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setFilters(DEFAULT_FILTERS)}
                   style={{
-                    marginTop: '24px',
-                    background: 'var(--accent-glow)',
-                    border: '1px solid var(--accent)',
-                    borderRadius: '14px',
-                    padding: '12px 28px',
-                    color: 'var(--accent)',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: '14px',
+                    background:   'transparent',
+                    border:       `1px solid ${TOKENS.border}`,
+                    borderRadius: '2px',
+                    padding:      '13px 32px',
+                    color:        TOKENS.textMuted,
+                    cursor:       'pointer',
+                    fontFamily:   "'Bebas Neue', sans-serif",
+                    fontSize:     '13px',
+                    letterSpacing: '3px',
+                    transition:   'all 0.2s',
                   }}
                 >
-                  {isRTL ? '↺ إعادة ضبط الفلتر' : '↺ Reset Filters'}
+                  {isRTL ? 'إعادة الضبط' : 'RESET FILTERS'}
                 </Motion.button>
               </Motion.div>
+
             ) : (
               <Motion.div
                 variants={stagger}
                 initial="hidden"
                 animate="visible"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                  gap: '20px',
-                }}
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}
               >
                 <AnimatePresence>
                   {products.map((product, i) => (
@@ -845,19 +824,19 @@ export default function Products() {
             )}
           </div>
 
+          {/* Sidebar — right for RTL */}
           {!isMobile && isRTL && (
-            <FilterPanel filters={filters} setFilters={setFilters} categories={categories} t={t} isRTL={isRTL} />
+            <FilterPanel filters={filters} setFilters={setFilters}
+              categories={categories} t={t} isRTL={isRTL} />
           )}
         </div>
       </div>
 
+      {/* Mobile filter drawer */}
       {isMobile && filterOpen && (
         <FilterPanel
-          filters={filters}
-          setFilters={setFilters}
-          categories={categories}
-          t={t}
-          isRTL={isRTL}
+          filters={filters} setFilters={setFilters}
+          categories={categories} t={t} isRTL={isRTL}
           onClose={() => setFilterOpen(false)}
           isMobile
         />
