@@ -29,7 +29,7 @@ function CheckoutSkeleton() {
           transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.2 }}
           style={{
             minHeight: i === 0 ? '420px' : '320px',
-            borderRadius: '20px',
+            borderRadius: '4px',
             border: '1px solid var(--border)',
             background: 'var(--bg-card)',
           }}
@@ -40,6 +40,9 @@ function CheckoutSkeleton() {
 }
 
 function OrderConfirmation({ order, isRTL }) {
+  const [trackHover, setTrackHover] = useState(false);
+  const [continueHover, setContinueHover] = useState(false);
+
   return (
     <Motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -47,16 +50,25 @@ function OrderConfirmation({ order, isRTL }) {
       style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--border)',
-        borderRadius: '24px',
+        borderRadius: '4px',
         maxWidth: '780px',
         margin: '0 auto',
         padding: '36px',
         textAlign: 'center',
       }}
     >
-      <div style={{ fontSize: '56px', marginBottom: '12px' }}>✅</div>
-      <h1 style={{ color: 'var(--text-primary)', marginBottom: '10px', fontWeight: 800 }}>
-        {isRTL ? 'تم تأكيد طلبك بنجاح' : 'Order confirmed successfully'}
+      <div style={{ fontSize: '48px', marginBottom: '16px', color: 'var(--accent)' }}>✓</div>
+      <h1
+        style={{
+          color: 'var(--text-primary)',
+          marginBottom: '10px',
+          fontFamily: "'Bebas Neue', sans-serif",
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          fontSize: 'clamp(28px, 4vw, 38px)',
+        }}
+      >
+        {isRTL ? 'تم تأكيد طلبك بنجاح' : 'Order Confirmed'}
       </h1>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '26px' }}>
         {isRTL
@@ -104,16 +116,26 @@ function OrderConfirmation({ order, isRTL }) {
             key={line.label}
             style={{
               border: '1px solid var(--border)',
-              borderRadius: '14px',
+              borderRadius: '4px',
               padding: '12px',
               background: 'var(--bg-primary)',
             }}
           >
-            <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '6px' }}>{line.label}</div>
+            <div
+              style={{
+                color: 'var(--text-muted)',
+                fontSize: '11px',
+                marginBottom: '6px',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+              }}
+            >
+              {line.label}
+            </div>
             <div
               style={{
                 color: 'var(--text-primary)',
-                fontWeight: 700,
+                fontWeight: 600,
                 ...(line.key === 'email'
                   ? {
                       overflowWrap: 'break-word',
@@ -123,7 +145,7 @@ function OrderConfirmation({ order, isRTL }) {
               }}
             >
               {line.value}
-            </div>            
+            </div>
           </div>
         ))}
       </div>
@@ -131,33 +153,46 @@ function OrderConfirmation({ order, isRTL }) {
       <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <Link to={`/track/${order.id}`} style={{ textDecoration: 'none' }}>
           <button
+            onMouseEnter={() => setTrackHover(true)}
+            onMouseLeave={() => setTrackHover(false)}
             style={{
-              padding: '12px 18px',
-              border: 'none',
-              borderRadius: '12px',
+              padding: '13px 24px',
+              border: '1px solid #FFFFFF',
+              borderRadius: '2px',
               cursor: 'pointer',
-              background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-              color: '#fff',
+              background: trackHover ? 'var(--gold)' : '#FFFFFF',
+              borderColor: trackHover ? 'var(--gold)' : '#FFFFFF',
+              color: '#0A0A0A',
               fontWeight: 700,
+              fontSize: '13px',
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              transition: 'all 0.25s ease',
             }}
           >
-            {isRTL ? 'تتبع الطلب' : 'Track order'}
+            {isRTL ? 'تتبع الطلب' : 'Track Order'}
           </button>
         </Link>
 
         <Link to="/products" style={{ textDecoration: 'none' }}>
           <button
+            onMouseEnter={() => setContinueHover(true)}
+            onMouseLeave={() => setContinueHover(false)}
             style={{
-              padding: '12px 18px',
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
+              padding: '13px 24px',
+              border: `1px solid ${continueHover ? 'var(--gold)' : 'var(--border)'}`,
+              borderRadius: '2px',
               cursor: 'pointer',
               background: 'transparent',
-              color: 'var(--text-primary)',
+              color: continueHover ? 'var(--gold)' : 'var(--text-primary)',
               fontWeight: 700,
+              fontSize: '13px',
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              transition: 'all 0.25s ease',
             }}
           >
-            {isRTL ? 'متابعة التسوق' : 'Continue shopping'}
+            {isRTL ? 'متابعة التسوق' : 'Continue Shopping'}
           </button>
         </Link>
       </div>
@@ -172,6 +207,7 @@ export default function Checkout() {
   const [form, setForm] = useState(initialForm);
   const [formError, setFormError] = useState('');
   const [confirmedOrder, setConfirmedOrder] = useState(null);
+  const [submitHover, setSubmitHover] = useState(false);
 
   const { data: cart, isLoading } = useQuery({
     queryKey: ['cart'],
@@ -180,7 +216,7 @@ export default function Checkout() {
 
   const items = cart?.items || [];
   const subtotal = Number(cart?.total_price || 0);
-  const [selectedRegionId, setSelectedRegionId] = useState(() => localStorage.getItem('selected_shipping_region') || '');  
+  const [selectedRegionId, setSelectedRegionId] = useState(() => localStorage.getItem('selected_shipping_region') || '');
   const { data: regionsData } = useQuery({
     queryKey: ['shipping-regions'],
     queryFn: () => api.get('/orders/shipping-regions/').then((res) => res.data),
@@ -195,9 +231,9 @@ export default function Checkout() {
     localStorage.setItem('selected_shipping_region', selectedRegionId);
   }, [selectedRegionId]);
 
-  
+
   const selectedRegion = regions.find((r) => String(r.id) === String(selectedRegionId));
-  const shipping = selectedRegion ? Number(selectedRegion.price) : 0;  
+  const shipping = selectedRegion ? Number(selectedRegion.price) : 0;
   const grandTotal = subtotal + shipping;
 
   const hasUnavailableItems = items.some((item) => !item.is_available);
@@ -231,45 +267,71 @@ export default function Checkout() {
     event.preventDefault();
     setFormError('');
 
-    if (!form.shipping_name.trim() || !form.shipping_phone.trim() || !form.shipping_email.trim() || !form.shipping_address.trim() || !selectedRegionId) {               
+    if (!form.shipping_name.trim() || !form.shipping_phone.trim() || !form.shipping_email.trim() || !form.shipping_address.trim() || !selectedRegionId) {
       setFormError(
         isRTL
           ? 'الاسم ورقم الهاتف والإيميل والعنوان مطلوبين قبل تأكيد الطلب.'
-          : 'Name, phone, email and address are required before confirming order.'          
+          : 'Name, phone, email and address are required before confirming order.'
       );
       return;
     }
 
-    createOrder.mutate({ ...form, shipping_region_id: Number(selectedRegionId) });    
+    createOrder.mutate({ ...form, shipping_region_id: Number(selectedRegionId) });
   };
 
   if (confirmedOrder) {
     return (
-      <div style={{ minHeight: '100vh', padding: '40px 5%' }}>
+      <div style={{ minHeight: '100vh', padding: '40px 5%', background: 'var(--bg-primary)' }}>
         <OrderConfirmation order={confirmedOrder} isRTL={isRTL} />
       </div>
     );
   }
 
+  const inputStyle = {
+    background: 'var(--bg-primary)',
+    border: '1px solid var(--border)',
+    borderRadius: '2px',
+    padding: '12px 14px',
+    color: 'var(--text-primary)',
+    fontFamily: "'Inter', sans-serif",
+    outline: 'none',
+  };
+
+  const labelStyle = {
+    color: 'var(--text-secondary)',
+    fontSize: '12px',
+    letterSpacing: '1px',
+    textTransform: 'uppercase',
+  };
+
   return (
 
-    <div style={{ minHeight: '100vh', padding: '40px 5%' }}>
+    <div style={{ minHeight: '100vh', padding: '40px 5%', background: 'var(--bg-primary)' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         <div style={{ marginBottom: '28px' }}>
           <div
             style={{
               fontSize: '11px',
               color: 'var(--accent)',
-              letterSpacing: '2px',
+              letterSpacing: '3px',
               textTransform: 'uppercase',
-              fontWeight: 800,
-              marginBottom: '8px',
+              fontWeight: 700,
+              marginBottom: '10px',
             }}
           >
             ✦ {isRTL ? 'المرحلة 4' : 'Phase 4'}
           </div>
-          <h1 style={{ color: 'var(--text-primary)', fontSize: 'clamp(28px, 4vw, 42px)', marginBottom: '8px' }}>
-            {isRTL ? 'Checkout & Confirm Order' : 'Checkout & Confirm Order'}
+          <h1
+            style={{
+              color: 'var(--text-primary)',
+              fontFamily: "'Bebas Neue', sans-serif",
+              fontSize: 'clamp(32px, 5vw, 48px)',
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              marginBottom: '8px',
+            }}
+          >
+            Checkout & Confirm Order
           </h1>
           <p style={{ color: 'var(--text-secondary)' }}>
             {isRTL
@@ -284,16 +346,29 @@ export default function Checkout() {
           <div
             style={{
               border: '1px solid var(--border)',
-              borderRadius: '20px',
+              borderRadius: '4px',
               background: 'var(--bg-card)',
-              padding: '28px',
+              padding: '40px 28px',
               textAlign: 'center',
             }}
           >
-            <p style={{ color: 'var(--text-primary)', marginBottom: '14px' }}>
+            <p style={{ color: 'var(--text-primary)', marginBottom: '16px' }}>
               {isRTL ? 'السلة فارغة حالياً. أضف منتجات أولاً.' : 'Your cart is empty. Add products first.'}
             </p>
-            <Link to="/products">{isRTL ? 'اذهب للمنتجات' : 'Go to products'}</Link>
+            <Link
+              to="/products"
+              style={{
+                color: 'var(--accent)',
+                textDecoration: 'none',
+                fontSize: '13px',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                borderBottom: '1px solid var(--accent)',
+                paddingBottom: '4px',
+              }}
+            >
+              {isRTL ? 'اذهب للمنتجات' : 'Go to Products'}
+            </Link>
           </div>
         ) : (
           <div
@@ -309,15 +384,24 @@ export default function Checkout() {
               style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
-                borderRadius: '20px',
-                padding: '24px',
+                borderRadius: '4px',
+                padding: '28px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '14px',
+                gap: '16px',
               }}
             >
-              <h2 style={{ color: 'var(--text-primary)', fontWeight: 800, marginBottom: '8px' }}>
-                {isRTL ? 'بيانات الشحن' : 'Shipping details'}
+              <h2
+                style={{
+                  color: 'var(--text-primary)',
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  fontSize: '22px',
+                  marginBottom: '4px',
+                }}
+              >
+                {isRTL ? 'بيانات الشحن' : 'Shipping Details'}
               </h2>
 
               {[
@@ -326,58 +410,39 @@ export default function Checkout() {
                 { key: 'shipping_email', labelAr: 'البريد الإلكتروني', labelEn: 'Email address' },
               ].map((input) => (
                 <label key={input.key} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                  <span style={labelStyle}>
                     {isRTL ? input.labelAr : input.labelEn}
                   </span>
                   <input
                     type={input.key === 'shipping_email' ? 'email' : 'text'}
                     value={form[input.key]}
                     onChange={handleChange(input.key)}
-                    style={{
-                      background: 'var(--bg-primary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      color: 'var(--text-primary)',
-                    }}
+                    style={inputStyle}
                   />
                 </label>
               ))}
 
               <label style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                <span style={labelStyle}>
                   {isRTL ? 'العنوان بالتفصيل' : 'Full address'}
                 </span>
                 <textarea
                   value={form.shipping_address}
                   onChange={handleChange('shipping_address')}
                   rows={4}
-                  style={{
-                    background: 'var(--bg-primary)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    color: 'var(--text-primary)',
-                    resize: 'vertical',
-                  }}
+                  style={{ ...inputStyle, resize: 'vertical' }}
                 />
               </label>
 
               <label style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                <span style={labelStyle}>
                   {isRTL ? 'المحافظة' : 'Governorate'}
                 </span>
                 <select
                   value={selectedRegionId || ''}
                   onChange={(event) => setSelectedRegionId(event.target.value)}
                   required
-                  style={{
-                    background: 'var(--bg-primary)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    color: 'var(--text-primary)',
-                  }}
+                  style={inputStyle}
                 >
                   <option value="">{isRTL ? 'اختر المحافظة' : 'Select Governorate'}</option>
                   {regions.map((region) => (
@@ -389,31 +454,24 @@ export default function Checkout() {
               </label>
 
               <label style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                <span style={labelStyle}>
                   {isRTL ? 'ملاحظات (اختياري)' : 'Notes (optional)'}
                 </span>
                 <textarea
                   value={form.notes}
                   onChange={handleChange('notes')}
                   rows={3}
-                  style={{
-                    background: 'var(--bg-primary)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    color: 'var(--text-primary)',
-                    resize: 'vertical',
-                  }}
+                  style={{ ...inputStyle, resize: 'vertical' }}
                 />
               </label>
 
               {regionsData && regions.length === 0 && (
                 <div
                   style={{
-                    borderRadius: '12px',
-                    padding: '10px 12px',
-                    background: 'rgba(239,68,68,0.1)',
-                    border: '1px solid rgba(239,68,68,0.4)',
+                    borderRadius: '2px',
+                    padding: '12px 14px',
+                    background: 'rgba(239,68,68,0.08)',
+                    border: '1px solid rgba(239,68,68,0.35)',
                     color: 'var(--danger)',
                     fontSize: '13px',
                   }}
@@ -425,10 +483,10 @@ export default function Checkout() {
               {formError && (
                 <div
                   style={{
-                    borderRadius: '12px',
-                    padding: '10px 12px',
-                    background: 'rgba(239,68,68,0.1)',
-                    border: '1px solid rgba(239,68,68,0.4)',
+                    borderRadius: '2px',
+                    padding: '12px 14px',
+                    background: 'rgba(239,68,68,0.08)',
+                    border: '1px solid rgba(239,68,68,0.35)',
                     color: 'var(--danger)',
                     fontSize: '13px',
                   }}
@@ -440,11 +498,11 @@ export default function Checkout() {
               {hasUnavailableItems && (
                 <div
                   style={{
-                    borderRadius: '12px',
-                    padding: '10px 12px',
-                    background: 'rgba(245,158,11,0.1)',
-                    border: '1px solid rgba(245,158,11,0.4)',
-                    color: '#f59e0b',
+                    borderRadius: '2px',
+                    padding: '12px 14px',
+                    background: 'rgba(184,155,94,0.08)',
+                    border: '1px solid rgba(184,155,94,0.4)',
+                    color: 'var(--gold)',
                     fontSize: '13px',
                   }}
                 >
@@ -457,17 +515,23 @@ export default function Checkout() {
               <button
                 type="submit"
                 disabled={createOrder.isPending || hasUnavailableItems}
+                onMouseEnter={() => setSubmitHover(true)}
+                onMouseLeave={() => setSubmitHover(false)}
                 style={{
-                  marginTop: '6px',
-                  border: 'none',
-                  borderRadius: '14px',
-                  padding: '14px',
+                  marginTop: '8px',
+                  border: '1px solid #FFFFFF',
+                  borderRadius: '2px',
+                  padding: '15px',
                   cursor: hasUnavailableItems ? 'not-allowed' : 'pointer',
-                  opacity: hasUnavailableItems ? 0.6 : 1,
-                  background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-                  color: '#fff',
+                  opacity: hasUnavailableItems ? 0.5 : 1,
+                  background: submitHover && !hasUnavailableItems ? 'var(--gold)' : '#FFFFFF',
+                  borderColor: submitHover && !hasUnavailableItems ? 'var(--gold)' : '#FFFFFF',
+                  color: '#0A0A0A',
                   fontWeight: 700,
-                  fontSize: '15px',
+                  fontSize: '13px',
+                  letterSpacing: '3px',
+                  textTransform: 'uppercase',
+                  transition: 'all 0.25s ease',
                 }}
               >
                 {createOrder.isPending
@@ -476,7 +540,7 @@ export default function Checkout() {
                     : 'Confirming...'
                   : isRTL
                     ? 'تأكيد الطلب الآن'
-                    : 'Confirm order now'}
+                    : 'Confirm Order'}
               </button>
             </form>
 
@@ -486,15 +550,24 @@ export default function Checkout() {
                 top: '96px',
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
-                borderRadius: '20px',
-                padding: '24px',
+                borderRadius: '4px',
+                padding: '28px',
               }}
             >
-              <h2 style={{ color: 'var(--text-primary)', marginBottom: '16px', fontWeight: 800 }}>
-                {isRTL ? 'مراجعة الطلب' : 'Order review'}
+              <h2
+                style={{
+                  color: 'var(--text-primary)',
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  fontSize: '22px',
+                  marginBottom: '18px',
+                }}
+              >
+                {isRTL ? 'مراجعة الطلب' : 'Order Review'}
               </h2>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '18px' }}>
                 {items.map((item) => (
                   <div
                     key={item.id}
@@ -509,31 +582,59 @@ export default function Checkout() {
                     <span>
                       {item.variant?.product?.name} × {item.quantity}
                     </span>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
                       {Number(item.subtotal).toLocaleString()} EGP
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', display: 'grid', gap: '8px' }}>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '14px', display: 'grid', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>{isRTL ? 'المجموع الفرعي' : 'Subtotal'}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{isRTL ? 'المجموع الفرعي' : 'Subtotal'}</span>
                   <span style={{ color: 'var(--text-primary)' }}>{subtotal.toLocaleString()} EGP</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>{isRTL ? 'الشحن' : 'Shipping'}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{isRTL ? 'الشحن' : 'Shipping'}</span>
                   <span style={{ color: 'var(--text-primary)' }}>
-                    {shipping === 0 ? (isRTL ? 'مجاني 🎉' : 'Free 🎉') : `${shipping} EGP`}
+                    {shipping === 0 ? (isRTL ? 'مجاني' : 'Free') : `${shipping} EGP`}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{isRTL ? 'الإجمالي' : 'Total'}</span>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{grandTotal.toLocaleString()} EGP</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginTop: '6px',
+                    paddingTop: '10px',
+                    borderTop: '1px solid var(--border)',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: 'var(--text-primary)',
+                      fontWeight: 700,
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      letterSpacing: '1px',
+                      fontSize: '18px',
+                    }}
+                  >
+                    {isRTL ? 'الإجمالي' : 'Total'}
+                  </span>
+                  <span
+                    style={{
+                      color: 'var(--accent)',
+                      fontWeight: 700,
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      letterSpacing: '1px',
+                      fontSize: '18px',
+                    }}
+                  >
+                    {grandTotal.toLocaleString()} EGP
+                  </span>
                 </div>
               </div>
 
-              <p style={{ color: 'var(--text-muted)', marginTop: '14px', fontSize: '12px', lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--text-muted)', marginTop: '16px', fontSize: '12px', lineHeight: 1.6 }}>
                 {isRTL
                   ? 'هذا التدفق بدون دفع أونلاين في المرحلة الحالية. بمجرد التأكيد سيتم إنشاء الطلب وحجز المخزون.'
                   : 'This flow does not include online payment in this phase. Confirming will create the order and reserve stock.'}

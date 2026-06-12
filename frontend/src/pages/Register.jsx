@@ -6,6 +6,21 @@ import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import api, { persistTokens } from '../services/api';
 
+// ─── Background Texture ────────────────────────────────────────────────────────
+function BgTexture() {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 0,
+      backgroundImage: `
+        linear-gradient(rgba(216,210,194,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(216,210,194,0.025) 1px, transparent 1px)
+      `,
+      backgroundSize: '60px 60px',
+      pointerEvents: 'none',
+    }} />
+  );
+}
+
 // ─── Password Strength ─────────────────────────────────────────────────────────
 function PasswordStrength({ password, isRTL }) {
   const checks = [
@@ -37,7 +52,7 @@ function PasswordStrength({ password, isRTL }) {
       <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
         {[1, 2, 3].map(level => (
           <div key={level} style={{
-            flex: 1, height: '4px', borderRadius: '2px',
+            flex: 1, height: '3px', borderRadius: '0px',
             background: strength >= level ? colors[strength] : 'var(--bg-hover)',
             transition: 'background 0.3s',
           }} />
@@ -47,6 +62,7 @@ function PasswordStrength({ password, isRTL }) {
           color: colors[strength],
           minWidth: '50px',
           textAlign: isRTL ? 'left' : 'right',
+          letterSpacing: '1px', textTransform: 'uppercase',
         }}>
           {labels[strength]}
         </span>
@@ -80,7 +96,7 @@ function PasswordStrength({ password, isRTL }) {
 }
 
 // ─── Progress Steps ────────────────────────────────────────────────────────────
-function StepIndicator({ current, total }) {  
+function StepIndicator({ current, total }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center',
@@ -89,32 +105,30 @@ function StepIndicator({ current, total }) {
     }}>
       {[...Array(total)].map((_, i) => (
         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Motion.div
-            animate={{
-              background: i < current
-                ? 'var(--success)'
-                : i === current
-                  ? 'linear-gradient(135deg, #6C63FF, #A78BFA)'
-                  : 'var(--bg-hover)',
-              scale: i === current ? 1.15 : 1,
-            }}
+          <div
             style={{
-              width: '32px', height: '32px',
-              borderRadius: '50%',
+              width: '30px', height: '30px',
+              borderRadius: '2px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '13px', fontWeight: 800, color: 'white',
-              background: i === current
-                ? 'linear-gradient(135deg, #6C63FF, #A78BFA)'
-                : i < current ? 'var(--success)' : 'var(--bg-hover)',
+              fontSize: '13px', fontWeight: 700,
+              fontFamily: "'Bebas Neue', sans-serif",
+              border: `1px solid ${i <= current ? 'var(--accent)' : 'var(--border)'}`,
+              background: i < current
+                ? 'var(--accent)'
+                : i === current
+                  ? '#FFFFFF'
+                  : 'transparent',
+              color: (i <= current && i <= current) ? '#0A0A0A' : 'var(--text-muted)',
+              transition: 'all 0.3s ease',
             }}
           >
             {i < current ? '✓' : i + 1}
-          </Motion.div>
+          </div>
           {i < total - 1 && (
             <div style={{
-              width: '40px', height: '2px',
-              background: i < current ? 'var(--success)' : 'var(--border)',
-              borderRadius: '1px', transition: 'background 0.3s',
+              width: '40px', height: '1px',
+              background: i < current ? 'var(--accent)' : 'var(--border)',
+              transition: 'background 0.3s',
             }} />
           )}
         </div>
@@ -132,9 +146,9 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
   return (
     <div style={{ marginBottom: '20px' }}>
       <label style={{
-        display: 'block', fontSize: '12px',
+        display: 'block', fontSize: '11px',
         fontWeight: 700, color: 'var(--text-secondary)',
-        marginBottom: '8px', letterSpacing: '1px',
+        marginBottom: '8px', letterSpacing: '2px',
         textTransform: 'uppercase',
       }}>
         {label}
@@ -144,7 +158,7 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
           position: 'absolute', top: '50%',
           transform: 'translateY(-50%)',
           [isRTL ? 'right' : 'left']: '16px',
-          fontSize: '18px', pointerEvents: 'none', zIndex: 1,
+          fontSize: '16px', pointerEvents: 'none', zIndex: 1, opacity: 0.6,
         }}>
           {icon}
         </span>
@@ -157,13 +171,13 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
           onBlur={()  => setFocused(false)}
           style={{
             width: '100%',
-            background: focused ? 'var(--bg-secondary)' : 'var(--bg-card)',
-            border: `1.5px solid ${error ? 'var(--danger)' : focused ? 'var(--accent)' : 'var(--border)'}`,
-            borderRadius: '14px',
+            background: 'var(--bg-primary)',
+            border: `1px solid ${error ? 'var(--danger)' : focused ? 'var(--accent)' : 'var(--border)'}`,
+            borderRadius: '2px',
             padding: `14px ${isPassword ? '48px' : '16px'} 14px 48px`,
-            color: 'var(--text-primary)', fontSize: '15px',
+            color: 'var(--text-primary)', fontSize: '14px',
+            fontFamily: "'Inter', sans-serif",
             outline: 'none', transition: 'all 0.25s',
-            boxShadow: focused ? '0 0 0 4px var(--accent-glow)' : 'none',
           }}
         />
         {isPassword && (
@@ -174,7 +188,8 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
               transform: 'translateY(-50%)',
               [isRTL ? 'left' : 'right']: '16px',
               background: 'transparent', border: 'none',
-              cursor: 'pointer', fontSize: '18px', color: 'var(--text-muted)',
+              cursor: 'pointer', fontSize: '16px', color: 'var(--text-muted)',
+              opacity: 0.7,
             }}
           >
             {showPass ? '🙈' : '👁️'}
@@ -202,10 +217,10 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function Register() {
   const { i18n } = useTranslation();
-  
+
   const t = (key) => {
     const messages = {
-      'auth.register_title': isRTL ? 'إنشاء حساب جديد' : 'Create your account',
+      'auth.register_title': isRTL ? 'إنشاء حساب جديد' : 'Create Your Account',
       'auth.email': isRTL ? 'البريد الإلكتروني' : 'Email',
       'auth.username': isRTL ? 'اسم المستخدم' : 'Username',
       'auth.phone': isRTL ? 'رقم الهاتف' : 'Phone',
@@ -227,6 +242,8 @@ export default function Register() {
     email: '', username: '', phone: '',
     password: '', password2: '',
   });
+  const [backHover, setBackHover] = useState(false);
+  const [nextHover, setNextHover] = useState(false);
 
   const set = (key) => (e) => {
     setForm(f => ({ ...f, [key]: e.target.value }));
@@ -268,7 +285,7 @@ export default function Register() {
     mutationFn: () => api.post('/auth/register/', form),
     onSuccess: (res) => {
       const { access, refresh, user } = res.data;
-      persistTokens({ access, refresh });      
+      persistTokens({ access, refresh });
       setUser(user);
       navigate('/', { replace: true });
     },
@@ -300,56 +317,45 @@ export default function Register() {
       minHeight: '100vh', display: 'flex',
       alignItems: 'center', justifyContent: 'center',
       padding: '40px 5%', position: 'relative', overflow: 'hidden',
+      background: 'var(--bg-primary)',
     }}>
-      {/* BG */}
-      {[
-        { w: 500, h: 500, top: '-20%', right: '-10%', color: 'rgba(108,99,255,0.07)', dur: 9 },
-        { w: 350, h: 350, top: '70%',  left: '-8%',   color: 'rgba(167,139,250,0.06)', dur: 11 },
-      ].map((orb, i) => (
-        <Motion.div key={i}
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: orb.dur, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'fixed', width: orb.w, height: orb.h,
-            top: orb.top, left: orb.left, right: orb.right,
-            borderRadius: '50%', background: orb.color,
-            filter: 'blur(70px)', pointerEvents: 'none', zIndex: 0,
-          }}
-        />
-      ))}
+      <BgTexture />
 
       <Motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         style={{
           width: '100%', maxWidth: '480px',
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
-          borderRadius: '28px', padding: '48px',
+          borderRadius: '4px', padding: '48px',
           position: 'relative', zIndex: 1,
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <Link to="/" style={{ textDecoration: 'none' }}>
-            <span
-              className="shark-logo-mark"
-              role="img"
-              aria-label="Shark"
-              style={{ width: '160px', height: '52px', marginBottom: '8px' }}              
-            />            
+            <div style={{
+              fontSize: '30px', fontWeight: 700,
+              color: 'var(--text-primary)',
+              fontFamily: "'Bebas Neue', sans-serif",
+              letterSpacing: '4px',
+              marginBottom: '14px',
+            }}>
+              2ROOTS
+            </div>
           </Link>
           <h1 style={{
-            fontSize: '26px', fontWeight: 800,
+            fontSize: '24px', fontWeight: 700,
             color: 'var(--text-primary)', marginBottom: '8px',
-            fontFamily: "'Syne', 'Cairo', sans-serif",
+            fontFamily: "'Bebas Neue', sans-serif",
+            letterSpacing: '2px', textTransform: 'uppercase',
           }}>
             {t('auth.register_title')}
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-            {isRTL ? 'انضم لعائلة شارك اليوم' : 'Join the Shark family today'}
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+            {isRTL ? 'انضم لعائلة 2ROOTS اليوم' : 'Join the 2ROOTS family today'}
           </p>
         </div>
 
@@ -359,8 +365,9 @@ export default function Register() {
         {/* Step Label */}
         <div style={{
           textAlign: 'center', marginBottom: '28px',
-          fontSize: '13px', fontWeight: 700,
-          color: 'var(--accent)', letterSpacing: '1px',
+          fontSize: '12px', fontWeight: 700,
+          color: 'var(--accent)', letterSpacing: '2px',
+          textTransform: 'uppercase',
         }}>
           {isRTL ? `الخطوة ${step + 1} من 2` : `Step ${step + 1} of 2`} — {steps[step]}
         </div>
@@ -373,10 +380,10 @@ export default function Register() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               style={{
-                background: 'rgba(239,68,68,0.1)',
+                background: 'rgba(239,68,68,0.08)',
                 border: '1px solid rgba(239,68,68,0.3)',
-                borderRadius: '14px', padding: '14px 18px',
-                color: 'var(--danger)', fontSize: '14px',
+                borderRadius: '2px', padding: '14px 18px',
+                color: 'var(--danger)', fontSize: '13px',
                 fontWeight: 600, marginBottom: '24px',
               }}
             >
@@ -445,35 +452,41 @@ export default function Register() {
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
           {step > 0 && (
-            <Motion.button
-              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+            <button
               onClick={() => setStep(s => s - 1)}
+              onMouseEnter={() => setBackHover(true)}
+              onMouseLeave={() => setBackHover(false)}
               style={{
                 flex: 1, background: 'transparent',
-                border: '1px solid var(--border)',
-                borderRadius: '16px', padding: '16px',
-                color: 'var(--text-secondary)',
-                fontSize: '15px', fontWeight: 600, cursor: 'pointer',
+                border: `1px solid ${backHover ? 'var(--gold)' : 'var(--border)'}`,
+                borderRadius: '2px', padding: '15px',
+                color: backHover ? 'var(--gold)' : 'var(--text-secondary)',
+                fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                letterSpacing: '2px', textTransform: 'uppercase',
+                transition: 'all 0.25s ease',
               }}
             >
               {isRTL ? '→ رجوع' : '← Back'}
-            </Motion.button>
+            </button>
           )}
 
-          <Motion.button
-            whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(108,99,255,0.35)' }}
-            whileTap={{ scale: 0.97 }}
+          <button
             onClick={handleNext}
             disabled={registerMutation.isLoading}
+            onMouseEnter={() => setNextHover(true)}
+            onMouseLeave={() => setNextHover(false)}
             style={{
               flex: 2,
-              background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-              border: 'none', borderRadius: '16px', padding: '16px',
-              color: 'white', fontSize: '16px', fontWeight: 700,
+              background: nextHover ? 'var(--gold)' : '#FFFFFF',
+              border: `1px solid ${nextHover ? 'var(--gold)' : '#FFFFFF'}`,
+              borderRadius: '2px', padding: '15px',
+              color: '#0A0A0A', fontSize: '13px', fontWeight: 700,
+              letterSpacing: '3px', textTransform: 'uppercase',
               cursor: registerMutation.isLoading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: '8px',
-              opacity: registerMutation.isLoading ? 0.8 : 1,
+              opacity: registerMutation.isLoading ? 0.7 : 1,
+              transition: 'all 0.25s ease',
             }}
           >
             {registerMutation.isLoading ? (
@@ -485,21 +498,24 @@ export default function Register() {
                 {isRTL ? 'جاري الإنشاء...' : 'Creating...'}
               </>
             ) : step < 1 ? (
-              <>{isRTL ? 'التالي' : 'Next'} {isRTL ? '←' : '→'}</>
+              <>{isRTL ? 'التالي' : 'Next'}</>
             ) : (
-              <>{t('auth.register_btn')} ✦</>
+              <>{t('auth.register_btn')}</>
             )}
-          </Motion.button>
+          </button>
         </div>
 
         {/* Login Link */}
         <div style={{ textAlign: 'center', marginTop: '28px' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
             {t('auth.have_account')}{' '}
           </span>
           <Link to="/login" style={{
             color: 'var(--accent)', fontWeight: 700,
-            textDecoration: 'none', fontSize: '14px',
+            textDecoration: 'none', fontSize: '13px',
+            letterSpacing: '1px', textTransform: 'uppercase',
+            borderBottom: '1px solid var(--accent)',
+            paddingBottom: '2px',
           }}>
             {t('auth.login_btn')}
           </Link>

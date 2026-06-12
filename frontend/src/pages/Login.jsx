@@ -6,30 +6,18 @@ import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import api, { persistTokens } from '../services/api';
 
-// ─── Floating Background Orbs ──────────────────────────────────────────────────
-function BgOrbs() {
+// ─── Background Texture ────────────────────────────────────────────────────────
+function BgTexture() {
   return (
-    <>
-      {[
-        { w: 500, h: 500, top: '-20%', left: '-10%', color: 'rgba(108,99,255,0.08)', dur: 8 },
-        { w: 350, h: 350, top: '60%',  right: '-8%', color: 'rgba(167,139,250,0.07)', dur: 10 },
-        { w: 250, h: 250, top: '30%',  left: '50%',  color: 'rgba(108,99,255,0.05)', dur: 6 },
-      ].map((orb, i) => (
-        <Motion.div key={i}
-          animate={{ y: [0, -20, 0], rotate: [0, 8, 0] }}
-          transition={{ duration: orb.dur, repeat: Infinity, ease: 'easeInOut' }}
-          style={{
-            position: 'fixed',
-            width: orb.w, height: orb.h,
-            top: orb.top, left: orb.left, right: orb.right,
-            borderRadius: '50%',
-            background: orb.color,
-            filter: 'blur(70px)',
-            pointerEvents: 'none', zIndex: 0,
-          }}
-        />
-      ))}
-    </>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 0,
+      backgroundImage: `
+        linear-gradient(rgba(216,210,194,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(216,210,194,0.025) 1px, transparent 1px)
+      `,
+      backgroundSize: '60px 60px',
+      pointerEvents: 'none',
+    }} />
   );
 }
 
@@ -43,9 +31,9 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
   return (
     <div style={{ marginBottom: '20px' }}>
       <label style={{
-        display: 'block', fontSize: '12px',
+        display: 'block', fontSize: '11px',
         fontWeight: 700, color: 'var(--text-secondary)',
-        marginBottom: '8px', letterSpacing: '1px',
+        marginBottom: '8px', letterSpacing: '2px',
         textTransform: 'uppercase',
       }}>
         {label}
@@ -57,8 +45,8 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
           position: 'absolute', top: '50%',
           transform: 'translateY(-50%)',
           [isRTL ? 'right' : 'left']: '16px',
-          fontSize: '18px', pointerEvents: 'none',
-          zIndex: 1,
+          fontSize: '16px', pointerEvents: 'none',
+          zIndex: 1, opacity: 0.6,
         }}>
           {icon}
         </span>
@@ -72,20 +60,20 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
           onBlur={()  => setFocused(false)}
           style={{
             width: '100%',
-            background: focused ? 'var(--bg-secondary)' : 'var(--bg-card)',
-            border: `1.5px solid ${error
+            background: 'var(--bg-primary)',
+            border: `1px solid ${error
               ? 'var(--danger)'
               : focused
                 ? 'var(--accent)'
                 : 'var(--border)'}`,
-            borderRadius: '14px',
+            borderRadius: '2px',
             padding: isRTL
               ? `14px ${isPassword ? '48px' : '16px'} 14px 48px`
               : `14px ${isPassword ? '48px' : '16px'} 14px 48px`,
             color: 'var(--text-primary)',
-            fontSize: '15px', outline: 'none',
+            fontSize: '14px', outline: 'none',
+            fontFamily: "'Inter', sans-serif",
             transition: 'all 0.25s',
-            boxShadow: focused ? '0 0 0 4px var(--accent-glow)' : 'none',
           }}
         />
 
@@ -100,8 +88,8 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
               transform: 'translateY(-50%)',
               [isRTL ? 'left' : 'right']: '16px',
               background: 'transparent', border: 'none',
-              cursor: 'pointer', fontSize: '18px',
-              color: 'var(--text-muted)',
+              cursor: 'pointer', fontSize: '16px',
+              color: 'var(--text-muted)', opacity: 0.7,
             }}
           >
             {showPass ? '🙈' : '👁️'}
@@ -133,10 +121,10 @@ function InputField({ label, type = 'text', value, onChange, placeholder, error,
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function Login() {
   const { i18n }   = useTranslation();
-  
+
     const t = (key) => {
     const messages = {
-      'auth.login_title': isRTL ? 'مرحبًا بعودتك' : 'Welcome back',
+      'auth.login_title': isRTL ? 'مرحبًا بعودتك' : 'Welcome Back',
       'auth.email': isRTL ? 'البريد الإلكتروني' : 'Email',
       'auth.password': isRTL ? 'كلمة المرور' : 'Password',
       'auth.login_btn': isRTL ? 'تسجيل الدخول' : 'Login',
@@ -153,6 +141,8 @@ export default function Login() {
 
   const [form, setForm]     = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
+  const [submitHover, setSubmitHover] = useState(false);
+  const [registerHover, setRegisterHover] = useState(false);
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
 
@@ -173,13 +163,13 @@ export default function Login() {
       email:    form.email,
       password: form.password,
     }),
-    onSuccess: async (res) => {      
+    onSuccess: async (res) => {
       const { access, refresh } = res.data;
       persistTokens({ access, refresh });
-      
+
       try {
         const profileResponse = await api.get('/auth/profile/');
-        setUser(profileResponse.data);        
+        setUser(profileResponse.data);
         navigate(from, { replace: true });
       } catch (error) {
         const status = error?.response?.status;
@@ -191,13 +181,13 @@ export default function Login() {
           : (error?.response?.data?.detail || fallback);
 
         setErrors({ general: msg });
-      }      
+      }
     },
     onError: (err) => {
       const status = err?.response?.status;
       const msg = status >= 500
         ? (isRTL ? 'الخادم غير متاح حالياً. حاول بعد قليل.' : 'Server is temporarily unavailable. Please try again shortly.')
-        : (err?.response?.data?.detail || (isRTL ? 'بيانات غير صحيحة' : 'Invalid credentials'));        
+        : (err?.response?.data?.detail || (isRTL ? 'بيانات غير صحيحة' : 'Invalid credentials'));
       setErrors({ general: msg });
     },
   });
@@ -212,31 +202,20 @@ export default function Login() {
       minHeight: '100vh', display: 'flex',
       alignItems: 'center', justifyContent: 'center',
       padding: '40px 5%', position: 'relative', overflow: 'hidden',
+      background: 'var(--bg-primary)',
     }}>
-      <BgOrbs />
-
-      {/* Grid Pattern */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0,
-        backgroundImage: `
-          linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px)
-        `,
-        backgroundSize: '60px 60px',
-        pointerEvents: 'none',
-      }} />
+      <BgTexture />
 
       <Motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         style={{
-          width: '100%', maxWidth: '480px',
+          width: '100%', maxWidth: '440px',
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
-          borderRadius: '28px', padding: '48px',
+          borderRadius: '4px', padding: '48px',
           position: 'relative', zIndex: 1,
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         {/* Logo */}
@@ -248,22 +227,24 @@ export default function Login() {
         >
           <Link to="/" style={{ textDecoration: 'none' }}>
             <div style={{
-              fontSize: '32px', fontWeight: 800,
-              background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              fontFamily: "'Syne', sans-serif", marginBottom: '8px',
+              fontSize: '30px', fontWeight: 700,
+              color: 'var(--text-primary)',
+              fontFamily: "'Bebas Neue', sans-serif",
+              letterSpacing: '4px',
+              marginBottom: '14px',
             }}>
-              🦈 SHARK
+              2ROOTS
             </div>
           </Link>
           <h1 style={{
-            fontSize: '26px', fontWeight: 800,
+            fontSize: '24px', fontWeight: 700,
             color: 'var(--text-primary)', marginBottom: '8px',
-            fontFamily: "'Syne', 'Cairo', sans-serif",
+            fontFamily: "'Bebas Neue', sans-serif",
+            letterSpacing: '2px', textTransform: 'uppercase',
           }}>
             {t('auth.login_title')}
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
             {isRTL ? 'أهلاً بك مجدداً!' : 'Welcome back!'}
           </p>
         </Motion.div>
@@ -272,14 +253,14 @@ export default function Login() {
         <AnimatePresence>
           {errors.general && (
             <Motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
               style={{
-                background: 'rgba(239,68,68,0.1)',
+                background: 'rgba(239,68,68,0.08)',
                 border: '1px solid rgba(239,68,68,0.3)',
-                borderRadius: '14px', padding: '14px 18px',
-                color: 'var(--danger)', fontSize: '14px',
+                borderRadius: '2px', padding: '14px 18px',
+                color: 'var(--danger)', fontSize: '13px',
                 fontWeight: 600, marginBottom: '24px',
                 display: 'flex', alignItems: 'center', gap: '8px',
               }}
@@ -313,21 +294,24 @@ export default function Login() {
           />
 
           {/* Submit */}
-          <Motion.button
-            whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(108,99,255,0.35)' }}
-            whileTap={{ scale: 0.97 }}
+          <button
             type="submit"
             disabled={loginMutation.isLoading}
+            onMouseEnter={() => setSubmitHover(true)}
+            onMouseLeave={() => setSubmitHover(false)}
             style={{
               width: '100%', marginTop: '8px',
-              background: 'linear-gradient(135deg, #6C63FF, #A78BFA)',
-              border: 'none', borderRadius: '16px',
-              padding: '16px',
-              color: 'white', fontSize: '16px', fontWeight: 700,
+              background: submitHover ? 'var(--gold)' : '#FFFFFF',
+              border: `1px solid ${submitHover ? 'var(--gold)' : '#FFFFFF'}`,
+              borderRadius: '2px',
+              padding: '15px',
+              color: '#0A0A0A', fontSize: '13px', fontWeight: 700,
+              letterSpacing: '3px', textTransform: 'uppercase',
               cursor: loginMutation.isLoading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center',
               justifyContent: 'center', gap: '8px',
-              opacity: loginMutation.isLoading ? 0.8 : 1,
+              opacity: loginMutation.isLoading ? 0.7 : 1,
+              transition: 'all 0.25s ease',
             }}
           >
             {loginMutation.isLoading ? (
@@ -339,9 +323,9 @@ export default function Login() {
                 {isRTL ? 'جاري الدخول...' : 'Signing in...'}
               </>
             ) : (
-              <>{t('auth.login_btn')} →</>
+              <>{t('auth.login_btn')}</>
             )}
-          </Motion.button>
+          </button>
         </form>
 
         {/* Divider */}
@@ -350,7 +334,7 @@ export default function Login() {
           margin: '28px 0',
         }}>
           <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>
             {isRTL ? 'أو' : 'or'}
           </span>
           <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
@@ -358,15 +342,22 @@ export default function Login() {
 
         {/* Register Link */}
         <div style={{ textAlign: 'center' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
             {t('auth.no_account')}{' '}
           </span>
-          <Link to="/register" style={{
-            color: 'var(--accent)', fontWeight: 700,
-            textDecoration: 'none', fontSize: '14px',
-          }}
-            onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-            onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+          <Link
+            to="/register"
+            onMouseEnter={() => setRegisterHover(true)}
+            onMouseLeave={() => setRegisterHover(false)}
+            style={{
+              color: registerHover ? 'var(--gold)' : 'var(--accent)',
+              fontWeight: 700,
+              textDecoration: 'none', fontSize: '13px',
+              letterSpacing: '1px', textTransform: 'uppercase',
+              borderBottom: `1px solid ${registerHover ? 'var(--gold)' : 'var(--accent)'}`,
+              paddingBottom: '2px',
+              transition: 'all 0.25s ease',
+            }}
           >
             {t('auth.register_btn')}
           </Link>
