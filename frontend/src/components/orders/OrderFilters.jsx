@@ -1,46 +1,69 @@
+import { useTranslation } from 'react-i18next';
 import { ORDER_STATUSES } from '../../hooks/useOrders';
 
 const SORT_OPTIONS = [
-  { value: 'dateDesc', label: 'Newest first' },
-  { value: 'dateAsc', label: 'Oldest first' },
-  { value: 'priceDesc', label: 'Price: high to low' },
-  { value: 'priceAsc', label: 'Price: low to high' },
+  { value: 'dateDesc',  en: 'Newest first',       ar: 'الأحدث أولاً' },
+  { value: 'dateAsc',   en: 'Oldest first',        ar: 'الأقدم أولاً' },
+  { value: 'priceDesc', en: 'Price: high to low',  ar: 'السعر: من الأعلى' },
+  { value: 'priceAsc',  en: 'Price: low to high',  ar: 'السعر: من الأدنى' },
 ];
 
 export default function OrderFilters({ filters, onChange }) {
+  const { i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
+  const tr = (en, ar) => (isRTL ? ar : en);
+
+  const set = (patch) => onChange({ ...filters, ...patch, page: 1 });
+
   return (
-    <div className="orders-filters">      
+    <div className="orders-filters">
+      {/* Search */}
       <input
         type="search"
         value={filters.search}
-        onChange={(event) => onChange({ ...filters, search: event.target.value, page: 1 })}
-        className="orders-input"        
-        placeholder="Search by Order ID or customer"
+        onChange={(e) => set({ search: e.target.value })}
+        className="orders-input"
+        placeholder={tr('Search by Order ID or customer', 'بحث برقم الطلب أو العميل')}
       />
 
+      {/* Status */}
       <select
         value={filters.status}
-        onChange={(event) => onChange({ ...filters, status: event.target.value, page: 1 })}
-        className="orders-select"        
+        onChange={(e) => set({ status: e.target.value })}
+        className="orders-select"
       >
-        <option value="all">All statuses</option>
-        {ORDER_STATUSES.map((status) => (
-          <option key={status} value={status}>{status}</option>
+        <option value="all">{tr('All statuses', 'كل الحالات')}</option>
+        {ORDER_STATUSES.map((s) => (
+          <option key={s} value={s}>{s}</option>
         ))}
       </select>
 
+      {/* Sort */}
       <select
         value={filters.sortBy}
-        onChange={(event) => onChange({ ...filters, sortBy: event.target.value, page: 1 })}
-        className="orders-select"        
+        onChange={(e) => set({ sortBy: e.target.value })}
+        className="orders-select"
       >
-        {SORT_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
+        {SORT_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{isRTL ? o.ar : o.en}</option>
         ))}
       </select>
 
-      <input type="date" value={filters.dateFrom || ""} onChange={(event) => onChange({ ...filters, dateFrom: event.target.value, page: 1 })} className="orders-input" />
-      <input type="date" value={filters.dateTo || ""} onChange={(event) => onChange({ ...filters, dateTo: event.target.value, page: 1 })} className="orders-input" />
+      {/* Date range */}
+      <input
+        type="date"
+        value={filters.dateFrom || ''}
+        onChange={(e) => set({ dateFrom: e.target.value })}
+        className="orders-input"
+        aria-label={tr('From date', 'من تاريخ')}
+      />
+      <input
+        type="date"
+        value={filters.dateTo || ''}
+        onChange={(e) => set({ dateTo: e.target.value })}
+        className="orders-input"
+        aria-label={tr('To date', 'إلى تاريخ')}
+      />
     </div>
   );
 }

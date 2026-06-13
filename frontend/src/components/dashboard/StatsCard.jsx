@@ -37,8 +37,11 @@ const ICONS = {
   ),
 };
 
+const TREND_ARROW = { up: '↑', down: '↓', flat: '→' };
+
 export default function StatsCard({ title, value, change, trend = 'up', icon }) {
   const hasChange = typeof change === 'number';
+  const trendClass = trend === 'down' ? 'is-down' : trend === 'flat' ? 'is-flat' : 'is-up';
 
   return (
     <article className="stats-card" aria-label={title}>
@@ -50,9 +53,9 @@ export default function StatsCard({ title, value, change, trend = 'up', icon }) 
       <h3 className="stats-card__value">{value}</h3>
 
       {hasChange && (
-        <p className={`stats-card__change ${trend === 'down' ? 'is-down' : 'is-up'}`}>
-          {change > 0 ? '+' : ''}
-          {change}% vs last month
+        <p className={`stats-card__change ${trendClass}`}>
+          {TREND_ARROW[trend] || '↑'}{' '}
+          {change > 0 ? '+' : ''}{change}% vs last month
         </p>
       )}
     </article>
