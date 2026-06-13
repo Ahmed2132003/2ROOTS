@@ -29,7 +29,8 @@ function resolveProductImageUrl(rawUrl) {
   const absoluteBaseMatch =
     typeof apiBaseUrl === 'string' ? apiBaseUrl.match(/^https?:\/\/[^/]+/i) : null;
   const apiOrigin =
-    configuredOrigin || absoluteBaseMatch?.[0] || 'http://localhost:8080';
+    configuredOrigin || absoluteBaseMatch?.[0] || window.location.origin;
+    
   const mediaBase =
     import.meta.env.VITE_MEDIA_BASE_URL || `${apiOrigin}/media/`;
   if (trimmedUrl.startsWith('/')) return `${apiOrigin}${trimmedUrl}`;
