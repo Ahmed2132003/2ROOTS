@@ -13,22 +13,23 @@ export default function Navbar() {
   const { i18n } = useTranslation();
   const { theme, toggleTheme } = useThemeStore();
   const { isAuthenticated, isAuthReady, user, logout } = useAuthStore();
-  const [scrolled, setScrolled]   = useState(false);
-  const [menuOpen, setMenuOpen]   = useState(false);
-  const [userMenu, setUserMenu]   = useState(false);
+  const [scrolled, setScrolled]     = useState(false);
+  const [menuOpen, setMenuOpen]     = useState(false);
+  const [userMenu, setUserMenu]     = useState(false);
+  const [logoError, setLogoError]   = useState(false);
   const location  = useLocation();
   const isRTL     = i18n.language === 'ar';
 
   const t = (key) => ({
-    'nav.home':      isRTL ? 'الرئيسية'       : 'Home',
-    'nav.products':  isRTL ? 'المنتجات'        : 'Products',
-    'nav.profile':   isRTL ? 'الملف الشخصي'   : 'Profile',
-    'nav.orders':    isRTL ? 'طلباتي'          : 'My Orders',
-    'nav.dashboard': isRTL ? 'لوحة التحكم'    : 'Dashboard',
-    'customers.title':isRTL ? 'العملاء'        : 'Customers',
-    'nav.logout':    isRTL ? 'تسجيل الخروج'   : 'Logout',
-    'nav.login':     isRTL ? 'تسجيل الدخول'   : 'Login',
-    'nav.menu':      isRTL ? 'القائمة'         : 'Menu',
+    'nav.home':       isRTL ? 'الرئيسية'       : 'Home',
+    'nav.products':   isRTL ? 'المنتجات'        : 'Products',
+    'nav.profile':    isRTL ? 'الملف الشخصي'   : 'Profile',
+    'nav.orders':     isRTL ? 'طلباتي'          : 'My Orders',
+    'nav.dashboard':  isRTL ? 'لوحة التحكم'    : 'Dashboard',
+    'customers.title':isRTL ? 'العملاء'         : 'Customers',
+    'nav.logout':     isRTL ? 'تسجيل الخروج'   : 'Logout',
+    'nav.login':      isRTL ? 'تسجيل الدخول'   : 'Login',
+    'nav.menu':       isRTL ? 'القائمة'         : 'Menu',
   }[key] ?? key);
 
   const token = getAccessToken();
@@ -53,8 +54,8 @@ export default function Navbar() {
   const closeMenus = () => { setMenuOpen(false); setUserMenu(false); };
 
   const navLinks = [
-    { to: '/',        label: t('nav.home') },
-    { to: '/products',label: t('nav.products') },
+    { to: '/',         label: t('nav.home') },
+    { to: '/products', label: t('nav.products') },
   ];
 
   const accountLinks = [
@@ -92,15 +93,23 @@ export default function Navbar() {
             onClick={closeMenus}
             aria-label="2ROOTS – Home"
           >
-            {/* Try image logo first; fallback to text */}
-            <img
-              src="/2roots-logo.png"
-              alt="2ROOTS"
-              className="nav-logo-img"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-            <span className="nav-logo-tree" aria-hidden="true">🌳</span>
-            <span className="nav-logo-text">2ROOTS</span>
+            {!logoError ? (
+              <img
+                src="/2roots.png"
+                alt="2ROOTS"
+                className="nav-logo-img"
+                onError={() => setLogoError(true)}
+                style={{
+                  height: '36px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            ) : (
+              /* Fallback: text only — no tree emoji */
+              <span className="nav-logo-text">2ROOTS</span>
+            )}
           </Link>
 
           {/* ── Desktop Nav ───────────────────────────── */}
