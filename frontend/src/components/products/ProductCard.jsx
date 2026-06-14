@@ -30,7 +30,7 @@ function resolveProductImageUrl(rawUrl) {
     typeof apiBaseUrl === 'string' ? apiBaseUrl.match(/^https?:\/\/[^/]+/i) : null;
   const apiOrigin =
     configuredOrigin || absoluteBaseMatch?.[0] || window.location.origin;
-    
+
   const mediaBase =
     import.meta.env.VITE_MEDIA_BASE_URL || `${apiOrigin}/media/`;
   if (trimmedUrl.startsWith('/')) return `${apiOrigin}${trimmedUrl}`;
@@ -43,13 +43,12 @@ const styles = {
     display: 'block',
     background: '#111111',
     border: '1px solid rgba(216, 210, 194, 0.10)',
-    borderRadius: '4px',           // sharp corners — luxury streetwear aesthetic
+    borderRadius: '4px',
     overflow: 'hidden',
     transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
     cursor: 'pointer',
     position: 'relative',
   },
-  // gold border + shadow on hover — applied via whileHover + CSS var trick
   cardHover: {
     borderColor: 'rgba(184, 155, 94, 0.55)',
     boxShadow: '0 8px 32px rgba(0,0,0,0.55)',
@@ -57,14 +56,18 @@ const styles = {
   imageWrap: {
     position: 'relative',
     width: '100%',
-    aspectRatio: '3 / 4',           // portrait ratio — editorial / apparel standard
+    aspectRatio: '3 / 4',
     overflow: 'hidden',
     background: '#0A0A0A',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   image: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
+    objectFit: 'contain',
+    objectPosition: 'center',
     display: 'block',
     transition: 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
   },
@@ -246,7 +249,6 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
   const [cardHovered, setCardHovered] = useState(false);
   const [imgHovered, setImgHovered] = useState(false);
 
-  // Stock & discount flags
   const isSoldOut =
     product.is_sold_out ||
     product.stock_status === 'sold_out' ||
@@ -258,7 +260,6 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
     product.discount_is_active && product.discounted_price != null;
   const discountPct = product.discount_percentage || 0;
 
-  // Image resolution
   const preferredImage = useMemo(() => {
     if (Array.isArray(product?.images) && product.images.length > 0) {
       return (
@@ -317,7 +318,6 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
             }}
           />
 
-          {/* Badges — top left */}
           <div style={styles.badgesTopLeft}>
             {product.is_featured && (
               <span style={styles.featuredBadge}>FEATURED</span>
@@ -327,14 +327,12 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
             )}
           </div>
 
-          {/* Sold Out overlay */}
           {isSoldOut && (
             <div style={styles.soldOutOverlay}>
               <SoldOutBadge />
             </div>
           )}
 
-          {/* Low Stock badge — bottom left */}
           {isLowStock && (
             <div style={styles.lowStockWrap}>
               <LowStockBadge />
@@ -344,44 +342,33 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
 
         {/* ── Body ── */}
         <div style={styles.body}>
-          {/* Category */}
           <p style={styles.category}>
             {product.category?.name || '—'}
           </p>
 
-          {/* Name */}
           <h3 style={styles.name}>{product.name}</h3>
 
-          {/* Price + CTA */}
           <div style={styles.footer}>
-            {/* Price */}
             <div style={styles.priceWrap}>
               {hasDiscount ? (
                 <>
                   <span style={styles.originalPrice}>
                     {Number(product.base_price).toLocaleString()}
-                    <span style={styles.currency}>
-                      {t('common.egp')}
-                    </span>
+                    <span style={styles.currency}>{t('common.egp')}</span>
                   </span>
                   <span style={styles.salePrice}>
                     {Number(product.discounted_price).toLocaleString()}
-                    <span style={styles.currency}>
-                      {t('common.egp')}
-                    </span>
+                    <span style={styles.currency}>{t('common.egp')}</span>
                   </span>
                 </>
               ) : (
                 <span style={styles.regularPrice}>
                   {Number(product.base_price).toLocaleString()}
-                  <span style={styles.currency}>
-                    {t('common.egp')}
-                  </span>
+                  <span style={styles.currency}>{t('common.egp')}</span>
                 </span>
               )}
             </div>
 
-            {/* Add to cart */}
             <AddButton
               isSoldOut={isSoldOut}
               adding={adding}
@@ -390,11 +377,8 @@ export default function ProductCard({ product, index, t, onAddToCart }) {
             />
           </div>
 
-          {/* Sold out label */}
           {isSoldOut && (
-            <p style={styles.soldOutText}>
-              {t('products.out_of_stock')}
-            </p>
+            <p style={styles.soldOutText}>{t('products.out_of_stock')}</p>
           )}
         </div>
       </Link>
