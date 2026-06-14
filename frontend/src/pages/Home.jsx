@@ -40,81 +40,79 @@ function resolveProductImageUrl(rawUrl) {
 // ══════════════════════════════════════════════════════════════
 // HERO SECTION
 // ══════════════════════════════════════════════════════════════
-function HeroSection({  isRTL }) {
+function HeroSection({ isRTL, heroProduct }) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref });
   const y       = useTransform(scrollYProgress, [0, 1], [0, -60]);
   const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const [imgError, setImgError] = useState(false);
+
+  const heroImage = useMemo(() => {
+    if (!heroProduct) return null;
+    if (Array.isArray(heroProduct.images) && heroProduct.images.length > 0) {
+      const mainImg = heroProduct.images.find((img) => img?.is_main)?.image || heroProduct.images[0]?.image;
+      return resolveProductImageUrl(mainImg);
+    }
+    return resolveProductImageUrl(heroProduct.main_image || heroProduct.image || '');
+  }, [heroProduct]);
+
+  const showImage = heroImage && !imgError && heroImage !== FALLBACK_IMAGE;
 
   return (
     <section ref={ref} style={{
       minHeight:  '100vh',
-      display:    'flex',
-      alignItems: 'center',
+      display:    'grid',
+      gridTemplateColumns: '1fr 1fr',
       position:   'relative',
       overflow:   'hidden',
-      padding:    '0 clamp(20px,5vw,80px)',
       background: 'var(--black)',
     }}>
 
-      {/* ── Grain texture overlay ── */}
-      <div style={{
-        position:   'absolute',
-        inset:       0,
-        zIndex:      1,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
-        backgroundSize: '200px 200px',
-        pointerEvents:  'none',
-        opacity: 0.6,
-      }} />
-
-      {/* ── Subtle top gradient ── */}
-      <div style={{
-        position:   'absolute',
-        inset:       0,
-        zIndex:      0,
-        background: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(216,210,194,0.04) 0%, transparent 60%)',
-        pointerEvents: 'none',
-      }} />
-
-      {/* ── Vertical rule lines ── */}
-      {[15, 40, 60, 85].map((x, i) => (
-        <div key={i} style={{
-          position:    'absolute',
-          top:          0, bottom: 0,
-          left:        `${x}%`,
-          width:        '1px',
-          background:  'rgba(255,255,255,0.025)',
-          zIndex:       0,
-          pointerEvents:'none',
-        }} />
-      ))}
-
-      {/* ── Content ── */}
+      {/* ── LEFT: Content ── */}
       <Motion.div style={{
         y, opacity,
-        position:   'relative',
-        zIndex:      2,
-        maxWidth:   '1400px',
-        margin:     '0 auto',
-        width:      '100%',
-        paddingBlock:'120px 80px',
+        position:      'relative',
+        zIndex:         2,
+        padding:       'clamp(80px,10vh,140px) clamp(20px,5vw,80px)',
+        display:       'flex',
+        flexDirection: 'column',
+        justifyContent:'center',
       }}>
-        <Motion.div variants={stagger} initial="hidden" animate="visible">
+
+        {/* Grain texture overlay */}
+        <div style={{
+          position:        'absolute',
+          inset:            0,
+          zIndex:           0,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
+          backgroundSize:  '200px 200px',
+          pointerEvents:   'none',
+          opacity:          0.6,
+        }} />
+
+        {/* Vertical rule lines */}
+        {[25, 60].map((x, i) => (
+          <div key={i} style={{
+            position:     'absolute',
+            top:           0, bottom: 0,
+            left:         `${x}%`,
+            width:         '1px',
+            background:   'rgba(255,255,255,0.025)',
+            zIndex:        0,
+            pointerEvents: 'none',
+          }} />
+        ))}
+
+        <Motion.div variants={stagger} initial="hidden" animate="visible" style={{ position: 'relative', zIndex: 1 }}>
 
           {/* Eyebrow */}
           <Motion.div variants={fadeUp} custom={0} style={{
-            display:        'inline-flex',
-            alignItems:     'center',
-            gap:             '10px',
-            marginBottom:   '32px',
+            display:      'inline-flex',
+            alignItems:   'center',
+            gap:           '10px',
+            marginBottom: '32px',
           }}>
-            <span style={{
-              display:       'block',
-              width:          '28px',
-              height:         '1px',
-              background:    'var(--stone-muted)',
-            }} />
+            <span style={{ display: 'block', width: '28px', height: '1px', background: 'var(--stone-muted)' }} />
             <span style={{
               fontFamily:    'var(--font-body)',
               fontSize:       '11px',
@@ -130,12 +128,13 @@ function HeroSection({  isRTL }) {
           {/* Main headline */}
           <Motion.h1 variants={fadeUp} custom={1} style={{
             fontFamily:    'var(--font-display)',
-            fontSize:      'clamp(64px, 11vw, 140px)',
+            fontSize:      'clamp(56px, 8vw, 120px)',
             lineHeight:     0.9,
             letterSpacing: '0.02em',
             color:         'var(--white)',
             textTransform: 'uppercase',
             marginBottom:  '8px',
+            margin:         0,
           }}>
             2ROOTS
           </Motion.h1>
@@ -143,12 +142,13 @@ function HeroSection({  isRTL }) {
           {/* Tagline */}
           <Motion.div variants={fadeUp} custom={2} style={{
             fontFamily:    'var(--font-body)',
-            fontSize:      'clamp(12px, 1.4vw, 15px)',
+            fontSize:      'clamp(10px, 1.1vw, 13px)',
             fontWeight:     500,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
             color:         'var(--stone-muted)',
-            marginBottom:  '56px',
+            marginBottom:  '48px',
+            marginTop:     '10px',
           }}>
             {isRTL
               ? 'جذور في الكفاح · بُني للعظمة'
@@ -156,11 +156,7 @@ function HeroSection({  isRTL }) {
           </Motion.div>
 
           {/* CTAs */}
-          <Motion.div variants={fadeUp} custom={3} style={{
-            display:   'flex',
-            gap:        '12px',
-            flexWrap:  'wrap',
-          }}>
+          <Motion.div variants={fadeUp} custom={3} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Link to="/products" style={{ textDecoration: 'none' }}>
               <Motion.button
                 whileHover={{ backgroundColor: 'var(--stone)', boxShadow: '0 0 32px rgba(184,155,94,0.15)' }}
@@ -210,12 +206,12 @@ function HeroSection({  isRTL }) {
 
           {/* Stats */}
           <Motion.div variants={fadeUp} custom={4} style={{
-            display:       'flex',
-            gap:            'clamp(32px, 5vw, 72px)',
-            marginTop:     '80px',
-            paddingTop:    '40px',
-            borderTop:     '1px solid var(--border)',
-            flexWrap:      'wrap',
+            display:    'flex',
+            gap:         'clamp(24px, 4vw, 56px)',
+            marginTop:  '72px',
+            paddingTop: '36px',
+            borderTop:  '1px solid var(--border)',
+            flexWrap:   'wrap',
           }}>
             {[
               { num: '10K+', label: isRTL ? 'عميل' : 'CUSTOMERS' },
@@ -225,7 +221,7 @@ function HeroSection({  isRTL }) {
               <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <span style={{
                   fontFamily:    'var(--font-display)',
-                  fontSize:      'clamp(28px, 4vw, 40px)',
+                  fontSize:      'clamp(24px, 3.5vw, 38px)',
                   color:         'var(--white)',
                   lineHeight:     1,
                   letterSpacing: '0.02em',
@@ -247,39 +243,154 @@ function HeroSection({  isRTL }) {
           </Motion.div>
 
         </Motion.div>
+
+        {/* Scroll indicator */}
+        <Motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            position:      'absolute',
+            bottom:        '36px',
+            left:          '50%',
+            transform:     'translateX(-50%)',
+            zIndex:         2,
+            display:       'flex',
+            flexDirection: 'column',
+            alignItems:    'center',
+            gap:            '6px',
+          }}
+        >
+          <span style={{
+            fontSize:       '10px',
+            letterSpacing: '0.16em',
+            color:         'var(--stone-muted)',
+            textTransform: 'uppercase',
+            fontWeight:     500,
+          }}>
+            Scroll
+          </span>
+          <div style={{
+            width:      '1px',
+            height:     '36px',
+            background: 'linear-gradient(to bottom, var(--stone-muted), transparent)',
+          }} />
+        </Motion.div>
       </Motion.div>
 
-      {/* ── Scroll indicator ── */}
-      <Motion.div
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position:  'absolute',
-          bottom:    '36px',
-          left:      '50%',
-          transform: 'translateX(-50%)',
-          zIndex:     2,
-          display:   'flex',
-          flexDirection: 'column',
-          alignItems:'center',
-          gap:        '6px',
-        }}
-      >
-        <span style={{
-          fontSize:       '10px',
-          letterSpacing: '0.16em',
-          color:         'var(--stone-muted)',
-          textTransform: 'uppercase',
-          fontWeight:     500,
-        }}>
-          Scroll
-        </span>
+      {/* ── RIGHT: Hero Image ── */}
+      <div style={{
+        position:   'relative',
+        overflow:   'hidden',
+        background: 'var(--black-hover)',
+        minHeight:  '100vh',
+      }}>
+        {showImage ? (
+          <Motion.img
+            src={heroImage}
+            alt={heroProduct?.name || 'Featured product'}
+            initial={{ scale: 1.08, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            onError={() => setImgError(true)}
+            style={{
+              width:          '100%',
+              height:         '100%',
+              objectFit:     'cover',
+              objectPosition:'center top',
+              display:        'block',
+            }}
+          />
+        ) : (
+          <div style={{
+            width:          '100%',
+            height:         '100%',
+            display:       'flex',
+            alignItems:    'center',
+            justifyContent:'center',
+            fontSize:       '80px',
+            opacity:        0.05,
+          }}>
+            🌳
+          </div>
+        )}
+
+        {/* Gradient overlay — blends left edge into the content side */}
         <div style={{
-          width:         '1px',
-          height:        '36px',
-          background:    'linear-gradient(to bottom, var(--stone-muted), transparent)',
+          position:      'absolute',
+          inset:          0,
+          background:    isRTL
+            ? 'linear-gradient(to left, var(--black) 0%, transparent 35%)'
+            : 'linear-gradient(to right, var(--black) 0%, transparent 35%)',
+          pointerEvents: 'none',
+          zIndex:         1,
         }} />
-      </Motion.div>
+
+        {/* Product info badge (bottom-right) */}
+        {heroProduct && (
+          <Motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            style={{
+              position:     'absolute',
+              bottom:       '40px',
+              right:        '32px',
+              zIndex:        2,
+              background:   'rgba(0,0,0,0.7)',
+              backdropFilter:'blur(12px)',
+              border:       '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              padding:      '16px 20px',
+              minWidth:     '180px',
+            }}
+          >
+            {heroProduct.discount_is_active && heroProduct.discount_percentage && (
+              <div style={{
+                display:       'inline-block',
+                background:   'var(--danger)',
+                color:        'var(--white)',
+                borderRadius: 'var(--radius-sm)',
+                padding:      '3px 8px',
+                fontSize:      '10px',
+                fontWeight:    700,
+                letterSpacing:'0.06em',
+                marginBottom: '8px',
+              }}>
+                -{Number(heroProduct.discount_percentage)}%
+              </div>
+            )}
+            <div style={{
+              fontSize:       '10px',
+              fontWeight:     600,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color:         'var(--stone-muted)',
+              marginBottom:  '4px',
+            }}>
+              {heroProduct.category?.name}
+            </div>
+            <div style={{
+              fontWeight:    600,
+              fontSize:      '13px',
+              color:        'var(--white)',
+              marginBottom: '8px',
+              letterSpacing:'0.02em',
+            }}>
+              {heroProduct.name}
+            </div>
+            <div style={{
+              fontFamily:    'var(--font-display)',
+              fontSize:       '18px',
+              color:         'var(--white)',
+              letterSpacing: '0.02em',
+            }}>
+              {heroProduct.discount_is_active && heroProduct.discounted_price
+                ? Number(heroProduct.discounted_price).toLocaleString()
+                : Number(heroProduct.base_price).toLocaleString()} ج.م
+            </div>
+          </Motion.div>
+        )}
+      </div>
     </section>
   );
 }
@@ -317,12 +428,12 @@ function CategoryCard({ cat, index }) {
       }}>
         {/* Image area */}
         <div style={{
-          flex:       '1',
-          background: showCatImage ? 'var(--black)' : 'var(--black-hover)',
-          display:    'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow:   'hidden',
+          flex:           '1',
+          background:     showCatImage ? 'var(--black)' : 'var(--black-hover)',
+          display:       'flex',
+          alignItems:    'center',
+          justifyContent:'center',
+          overflow:      'hidden',
         }}>
           {showCatImage ? (
             <img
@@ -345,11 +456,11 @@ function CategoryCard({ cat, index }) {
 
         {/* Label */}
         <div style={{
-          padding:    '14px 16px',
-          borderTop:  '1px solid var(--border)',
-          display:    'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          padding:        '14px 16px',
+          borderTop:      '1px solid var(--border)',
+          display:       'flex',
+          alignItems:    'center',
+          justifyContent:'space-between',
         }}>
           <span style={{
             fontWeight:     600,
@@ -360,13 +471,8 @@ function CategoryCard({ cat, index }) {
           }}>
             {cat.name}
           </span>
-          <span style={{
-            fontSize:  '12px',
-            color:     'var(--stone-muted)',
-          }}>
-            {cat.subcategories?.length > 0
-              ? `${cat.subcategories.length}`
-              : '→'}
+          <span style={{ fontSize: '12px', color: 'var(--stone-muted)' }}>
+            {cat.subcategories?.length > 0 ? `${cat.subcategories.length}` : '→'}
           </span>
         </div>
       </Link>
@@ -408,13 +514,13 @@ function ProductCard({ product, index, t, onAddToCart }) {
       custom={index}
       whileHover={{ y: -6, borderColor: 'var(--border-strong)' }}
       style={{
-        background:    'var(--bg-card)',
-        border:        '1px solid var(--border)',
-        borderRadius:  'var(--radius-md)',
-        overflow:      'hidden',
-        position:      'relative',
-        transition:    'border-color 0.25s',
-        opacity:        isSoldOut ? 0.7 : 1,
+        background:  'var(--bg-card)',
+        border:      '1px solid var(--border)',
+        borderRadius:'var(--radius-md)',
+        overflow:    'hidden',
+        position:    'relative',
+        transition:  'border-color 0.25s',
+        opacity:      isSoldOut ? 0.7 : 1,
       }}
     >
       <Link to={`/products/${product.slug}`} style={{ textDecoration: 'none' }}>
@@ -529,7 +635,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
           </div>
 
           <div style={{
-            display:       'flex',
+            display:        'flex',
             alignItems:    'center',
             justifyContent:'space-between',
             gap:            '8px',
@@ -549,9 +655,9 @@ function ProductCard({ product, index, t, onAddToCart }) {
               </span>
               {hasDiscount && (
                 <span style={{
-                  fontSize:          '12px',
-                  color:            'var(--text-muted)',
-                  textDecoration:   'line-through',
+                  fontSize:        '12px',
+                  color:          'var(--text-muted)',
+                  textDecoration: 'line-through',
                 }}>
                   {Number(product.base_price).toLocaleString()}
                 </span>
@@ -623,7 +729,7 @@ function SectionHeader({ label, title, action }) {
     <Motion.div
       variants={fadeUp}
       style={{
-        display:       'flex',
+        display:        'flex',
         alignItems:    'flex-end',
         justifyContent:'space-between',
         marginBottom:  '48px',
@@ -680,7 +786,7 @@ export default function Home() {
   }[key] ?? key);
 
   const normalizeList = (data) => {
-    if (Array.isArray(data))         return data;
+    if (Array.isArray(data))          return data;
     if (Array.isArray(data?.results)) return data.results;
     return [];
   };
@@ -698,6 +804,9 @@ export default function Home() {
   const categoriesList = normalizeList(categories);
   const featuredList   = normalizeList(featured);
 
+  // أول منتج featured يكون صورة الـ hero
+  const heroProduct = featuredList[0] ?? null;
+
   const addToCart = useAddToCartMutation();
   const handleAddToCart = async (product) => {
     const variant = getPreferredCartVariant(product);
@@ -710,7 +819,7 @@ export default function Home() {
     <div style={{ background: 'var(--bg-primary)' }}>
 
       {/* ══ HERO ══ */}
-      <HeroSection t={t} isRTL={isRTL} />
+      <HeroSection isRTL={isRTL} heroProduct={heroProduct} />
 
       {/* ══ CATEGORIES ══ */}
       <section style={{ padding: 'clamp(64px,8vw,100px) clamp(20px,5vw,80px)' }}>
@@ -748,10 +857,10 @@ export default function Home() {
 
       {/* ══ FEATURED PRODUCTS ══ */}
       <section style={{
-        padding:    'clamp(64px,8vw,100px) clamp(20px,5vw,80px)',
-        background: 'var(--black-soft)',
-        position:   'relative',
-        overflow:   'hidden',
+        padding:   'clamp(64px,8vw,100px) clamp(20px,5vw,80px)',
+        background:'var(--black-soft)',
+        position:  'relative',
+        overflow:  'hidden',
       }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
           <Motion.div
@@ -828,15 +937,15 @@ export default function Home() {
               { bottom: 0, right: 0 },
             ].map((pos, i) => (
               <div key={i} style={{
-                position:   'absolute',
+                position:    'absolute',
                 ...pos,
-                width:       '40px',
-                height:      '40px',
-                borderTop:   pos.top === 0 ? '1px solid var(--gold)' : 'none',
-                borderBottom:pos.bottom === 0 ? '1px solid var(--gold)' : 'none',
-                borderLeft:  pos.left === 0 ? '1px solid var(--gold)' : 'none',
-                borderRight: pos.right === 0 ? '1px solid var(--gold)' : 'none',
-                opacity:     0.4,
+                width:        '40px',
+                height:       '40px',
+                borderTop:    pos.top === 0    ? '1px solid var(--gold)' : 'none',
+                borderBottom: pos.bottom === 0 ? '1px solid var(--gold)' : 'none',
+                borderLeft:   pos.left === 0   ? '1px solid var(--gold)' : 'none',
+                borderRight:  pos.right === 0  ? '1px solid var(--gold)' : 'none',
+                opacity:      0.4,
               }} />
             ))}
 
