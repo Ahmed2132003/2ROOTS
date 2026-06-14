@@ -420,7 +420,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
       <Link to={`/products/${product.slug}`} style={{ textDecoration: 'none' }}>
 
         {/* ── Image ── */}
-        <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '3/4' }}>
+        <div style={{ position: 'relative', overflow: 'hidden' }}>
           {preferredImage ? (
             <Motion.img
               src={imageSrc}
@@ -428,12 +428,12 @@ function ProductCard({ product, index, t, onAddToCart }) {
               whileHover={{ scale: 1.06 }}
               transition={{ duration: 0.6 }}
               onError={() => setImageError(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: '100%', height: 'auto', display: 'block' }}
             />
           ) : (
             <div style={{
               width:          '100%',
-              height:         '100%',
+              aspectRatio:   '3/4',
               background:    'var(--black-hover)',
               display:       'flex',
               alignItems:    'center',
