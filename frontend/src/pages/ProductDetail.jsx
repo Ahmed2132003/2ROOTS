@@ -46,15 +46,16 @@ function ImageGallery({ images, name }) {
   return (
     <div style={{ position: 'sticky', top: '90px' }}>
 
-      {/* Main image */}
+      {/* Main image — full aspect ratio, no cropping */}
       <div
         onClick={() => setZoomed(true)}
         style={{
           borderRadius: '4px', overflow: 'hidden',
-          aspectRatio: '3/4', cursor: 'zoom-in',
+          cursor: 'zoom-in',
           background: T.bgCard,
           border: `1px solid ${T.border}`,
           marginBottom: '12px', position: 'relative',
+          width: '100%',
         }}
       >
         <AnimatePresence mode="wait">
@@ -64,18 +65,24 @@ function ImageGallery({ images, name }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%' }}
           >
             {imgs[active]?.image ? (
               <img
                 loading="lazy"
                 src={imgs[active].image}
                 alt={imgs[active].alt_text || name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  objectFit: 'contain',
+                }}
               />
             ) : (
               <div style={{
-                width: '100%', height: '100%',
+                width: '100%',
+                aspectRatio: '3/4',
                 background: T.bgHover,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
@@ -111,11 +118,12 @@ function ImageGallery({ images, name }) {
               whileTap={{ scale: 0.96 }}
               onClick={() => setActive(i)}
               style={{
-                width: '68px', height: '68px',
+                width: '80px', height: '80px',
                 borderRadius: '4px', overflow: 'hidden',
                 border: `1.5px solid ${active === i ? T.gold : T.border}`,
                 cursor: 'pointer', flexShrink: 0,
                 transition: 'border-color 0.2s',
+                background: T.bgCard,
               }}
             >
               {img.image ? (
@@ -202,7 +210,6 @@ function VariantSelector({ variants, selected, onSelect }) {
 
   return (
     <div style={{ marginBottom: '28px' }}>
-      {/* Selected summary */}
       <div style={{
         fontFamily: "'Bebas Neue', sans-serif",
         fontSize: '11px', letterSpacing: '3px',
@@ -213,7 +220,6 @@ function VariantSelector({ variants, selected, onSelect }) {
           : '✦ SELECT OPTIONS'}
       </div>
 
-      {/* Colors */}
       {colors.length > 0 && (
         <div style={{ marginBottom: '20px' }}>
           <span style={labelStyle}>COLOR</span>
@@ -242,7 +248,6 @@ function VariantSelector({ variants, selected, onSelect }) {
         </div>
       )}
 
-      {/* Sizes */}
       {sizes.length > 0 && (
         <div>
           <span style={labelStyle}>SIZE</span>
@@ -365,7 +370,7 @@ function ProductDetailSkeleton() {
   return (
     <div style={{
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+      gridTemplateColumns: '55% 1fr',
       gap: '60px', padding: '40px 5%',
       maxWidth: '1400px', margin: '0 auto',
     }}>
@@ -373,7 +378,7 @@ function ProductDetailSkeleton() {
         <div style={{ aspectRatio: '3/4', background: T.bgCard, borderRadius: '4px', marginBottom: '12px' }} />
         <div style={{ display: 'flex', gap: '8px' }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} style={{ width: '68px', height: '68px', background: T.bgCard, borderRadius: '4px' }} />
+            <div key={i} style={{ width: '80px', height: '80px', background: T.bgCard, borderRadius: '4px' }} />
           ))}
         </div>
       </Motion.div>
@@ -399,7 +404,6 @@ export default function ProductDetail() {
   const isRTL      = i18n.language === 'ar';
   const navigate   = useNavigate();
 
-  /* Inline translation shim */
   const t = (key) => {
     const map = {
       'common.error':          isRTL ? 'خطأ' : 'Error',
@@ -423,7 +427,6 @@ export default function ProductDetail() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  /* Fetch */
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ['product', slug],
     queryFn:  () => api.get(`/products/items/${slug}/`).then(r => r.data),
@@ -533,21 +536,24 @@ export default function ProductDetail() {
           ))}
         </Motion.div>
 
-        {/* ── Main Grid ── */}
+        {/* ── Main Grid: fixed columns so image never gets cut ── */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '64px', alignItems: 'start',
+          gridTemplateColumns: 'minmax(0, 55%) minmax(0, 45%)',
+          gap: '64px',
+          alignItems: 'start',
         }}>
 
-          {/* Gallery */}
-          <Motion.div
-            initial={{ opacity: 0, x: isRTL ? 32 : -32 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <ImageGallery images={product?.images} name={product?.name} />
-          </Motion.div>
+          {/* Gallery — RTL: يجي على اليمين */}
+          {isRTL ? null : (
+            <Motion.div
+              initial={{ opacity: 0, x: -32 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <ImageGallery images={product?.images} name={product?.name} />
+            </Motion.div>
+          )}
 
           {/* Info */}
           <Motion.div
@@ -555,8 +561,7 @@ export default function ProductDetail() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-
-            {/* Eyebrow — category + badges */}
+            {/* Eyebrow */}
             <div style={{
               display: 'flex', alignItems: 'center',
               gap: '12px', marginBottom: '16px', flexWrap: 'wrap',
@@ -715,7 +720,6 @@ export default function ProductDetail() {
             <Motion.div variants={fadeUp} custom={6}
               style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '32px' }}>
 
-              {/* Add to Cart — primary: white bg, black text */}
               <Motion.button
                 whileHover={canAdd ? { background: T.stone } : {}}
                 whileTap={canAdd ? { scale: 0.97 } : {}}
@@ -745,7 +749,6 @@ export default function ProductDetail() {
                 )}
               </Motion.button>
 
-              {/* Buy Now — secondary: transparent, stone border */}
               {canAdd && (
                 <Link to="/checkout" style={{ textDecoration: 'none', flex: 1, minWidth: '140px' }}>
                   <Motion.button
@@ -805,6 +808,18 @@ export default function ProductDetail() {
             </Motion.div>
 
           </Motion.div>
+
+          {/* Gallery — RTL side */}
+          {isRTL && (
+            <Motion.div
+              initial={{ opacity: 0, x: 32 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <ImageGallery images={product?.images} name={product?.name} />
+            </Motion.div>
+          )}
+
         </div>
       </div>
 

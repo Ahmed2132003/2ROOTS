@@ -11,8 +11,8 @@ const TOKENS = {
   bg:          '#0A0A0A',
   bgCard:      '#111111',
   bgHover:     '#1A1A1A',
-  border:      'rgba(216,210,194,0.12)',   // --accent-stone at 12%
-  borderHover: 'rgba(184,155,94,0.5)',     // gold
+  border:      'rgba(216,210,194,0.12)',
+  borderHover: 'rgba(184,155,94,0.5)',
   textPrimary: '#FFFFFF',
   textSecond:  '#D9D9D9',
   textMuted:   'rgba(217,217,217,0.45)',
@@ -66,7 +66,7 @@ const stagger = {
 };
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   PRODUCT CARD
+   PRODUCT CARD — same image treatment as Home.jsx
 ══════════════════════════════════════════════════════════════════════════════ */
 function ProductCard({ product, index, t, onAddToCart }) {
   const [adding,     setAdding]     = useState(false);
@@ -100,29 +100,47 @@ function ProductCard({ product, index, t, onAddToCart }) {
       custom={index}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      whileHover={{ y: -5 }}
+      whileHover={{ y: -6, borderColor: TOKENS.borderHover }}
       style={{
         background:    TOKENS.bgCard,
-        border:        `1px solid ${hovered ? TOKENS.borderHover : TOKENS.border}`,
+        border:        `1px solid ${TOKENS.border}`,
         borderRadius:  '4px',
         overflow:      'hidden',
         position:      'relative',
         transition:    'border-color 0.35s ease',
         cursor:        'pointer',
+        opacity:       isSoldOut ? 0.75 : 1,
       }}
     >
       <Link to={`/products/${product.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
 
-        {/* ── Image ── */}
-        <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '3/4' }}>
-          <Motion.img
-            src={imageSrc}
-            alt={product.name}
-            animate={{ scale: hovered ? 1.06 : 1 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            onError={() => setImageError(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
+        {/* ── Image — full natural height, no crop ── */}
+        <div style={{ position: 'relative', overflow: 'hidden' }}>
+          {preferredImage ? (
+            <Motion.img
+              src={imageSrc}
+              alt={product.name}
+              animate={{ scale: hovered ? 1.06 : 1 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              onError={() => setImageError(true)}
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+                objectFit: 'contain',
+              }}
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              aspectRatio: '3/4',
+              background: TOKENS.bgHover,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '48px', opacity: 0.2,
+            }}>
+              🌳
+            </div>
+          )}
 
           {/* Dark vignette on hover */}
           <Motion.div
@@ -187,7 +205,7 @@ function ProductCard({ product, index, t, onAddToCart }) {
             </div>
           )}
 
-          {/* Quick-add button — slides up on hover */}
+          {/* Quick-add button */}
           {!isSoldOut && (
             <Motion.button
               onClick={handleAdd}
@@ -217,7 +235,6 @@ function ProductCard({ product, index, t, onAddToCart }) {
 
         {/* ── Info ── */}
         <div style={{ padding: '16px 16px 20px' }}>
-          {/* Category */}
           <div style={{
             fontSize: '10px',
             color: TOKENS.textMuted,
@@ -229,7 +246,6 @@ function ProductCard({ product, index, t, onAddToCart }) {
             {product.category?.name}
           </div>
 
-          {/* Name */}
           <div style={{
             fontFamily: "'Inter', sans-serif",
             fontWeight: 500,
@@ -246,7 +262,6 @@ function ProductCard({ product, index, t, onAddToCart }) {
             {product.name}
           </div>
 
-          {/* Price row */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
             <span style={{
               fontFamily: "'Bebas Neue', sans-serif",
@@ -350,7 +365,6 @@ function FilterPanel({ filters, setFilters, categories, t, isRTL, onClose, isMob
       overflowY:    'auto',
       width:        '100%',
     }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
         <div style={{
           fontFamily: "'Bebas Neue', sans-serif",
@@ -412,7 +426,6 @@ function FilterPanel({ filters, setFilters, categories, t, isRTL, onClose, isMob
         </div>
       </div>
 
-      {/* Divider */}
       <div style={{ height: '1px', background: TOKENS.border, marginBottom: '32px' }} />
 
       {/* Price */}
@@ -443,7 +456,6 @@ function FilterPanel({ filters, setFilters, categories, t, isRTL, onClose, isMob
         </div>
       </div>
 
-      {/* Divider */}
       <div style={{ height: '1px', background: TOKENS.border, marginBottom: '32px' }} />
 
       {/* In stock */}
@@ -534,7 +546,6 @@ export default function Products() {
   const { i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
 
-  /* ── Inline translation shim ── */
   const t = (key) => {
     const map = {
       'products.out_of_stock': isRTL ? 'نفد المخزون' : 'OUT OF STOCK',
@@ -606,7 +617,6 @@ export default function Products() {
     { value: '-base_price', label: isRTL ? 'السعر: الأعلى' : 'PRICE: HIGH' },
   ];
 
-  /* ── shared select / input styles ── */
   const controlBase = {
     background:   TOKENS.bgCard,
     border:       `1px solid ${TOKENS.border}`,
@@ -628,7 +638,6 @@ export default function Products() {
           transition={{ duration: 0.6 }}
           style={{ marginBottom: '48px' }}
         >
-          {/* eyebrow */}
           <div style={{
             fontFamily:    "'Bebas Neue', sans-serif",
             fontSize:      '12px',
@@ -639,7 +648,6 @@ export default function Products() {
             ✦ {t('nav.products')}
           </div>
 
-          {/* headline */}
           <h1 style={{
             fontFamily:    "'Bebas Neue', sans-serif",
             fontSize:      'clamp(40px, 7vw, 80px)',
@@ -665,7 +673,6 @@ export default function Products() {
             flexWrap:      'wrap',
           }}
         >
-          {/* Search */}
           <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
             <span style={{
               position: 'absolute', top: '50%', transform: 'translateY(-50%)',
@@ -691,7 +698,6 @@ export default function Products() {
             />
           </div>
 
-          {/* Sort */}
           <select
             value={filters.ordering}
             onChange={e => setFilters(f => ({ ...f, ordering: e.target.value }))}
@@ -711,7 +717,6 @@ export default function Products() {
             ))}
           </select>
 
-          {/* Mobile filter toggle */}
           {isMobile && (
             <Motion.button
               whileTap={{ scale: 0.96 }}
@@ -731,22 +736,19 @@ export default function Products() {
           )}
         </Motion.div>
 
-        {/* ── Two-column layout: sidebar + grid ── */}
+        {/* ── Two-column layout ── */}
         <div style={{
           display:             'grid',
           gridTemplateColumns: isMobile ? '1fr' : '220px 1fr',
           gap:                 '40px',
           alignItems:          'start',
         }}>
-          {/* Sidebar — left for LTR, right for RTL */}
           {!isMobile && !isRTL && (
             <FilterPanel filters={filters} setFilters={setFilters}
               categories={categories} t={t} isRTL={isRTL} />
           )}
 
-          {/* Products area */}
           <div>
-            {/* Count label */}
             <div style={{
               fontFamily:   "'Bebas Neue', sans-serif",
               color:        TOKENS.textMuted,
@@ -757,7 +759,6 @@ export default function Products() {
               {isLoading ? '—' : `${products.length} ${isRTL ? 'منتج' : 'PRODUCTS'}`}
             </div>
 
-            {/* States */}
             {isLoading ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
                 {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
@@ -824,7 +825,6 @@ export default function Products() {
             )}
           </div>
 
-          {/* Sidebar — right for RTL */}
           {!isMobile && isRTL && (
             <FilterPanel filters={filters} setFilters={setFilters}
               categories={categories} t={t} isRTL={isRTL} />
@@ -832,7 +832,6 @@ export default function Products() {
         </div>
       </div>
 
-      {/* Mobile filter drawer */}
       {isMobile && filterOpen && (
         <FilterPanel
           filters={filters} setFilters={setFilters}
