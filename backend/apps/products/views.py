@@ -19,6 +19,11 @@ class CategoryListView(generics.ListAPIView):
     serializer_class   = CategorySerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_queryset(self):
         return Category.objects.filter(is_active=True, parent=None)
 
@@ -32,6 +37,11 @@ class ProductListView(generics.ListAPIView):
     ordering_fields    = ['base_price', 'created_at']
     ordering           = ['-created_at']
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_queryset(self):
         return Product.objects.filter(is_active=True).select_related('category').prefetch_related(
             'images', 'variants__stock', 'variants__color', 'variants__size'
@@ -43,6 +53,11 @@ class ProductDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
     lookup_field       = 'slug'
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_queryset(self):
         return Product.objects.filter(is_active=True).prefetch_related(
             'images', 'variants__stock', 'variants__color', 'variants__size'
@@ -52,6 +67,11 @@ class ProductDetailView(generics.RetrieveAPIView):
 class FeaturedProductsView(generics.ListAPIView):
     serializer_class   = ProductListSerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def get_queryset(self):
         from django.db.models import Sum
@@ -100,6 +120,11 @@ class AdminProductViewSet(viewsets.ModelViewSet):
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter]
     search_fields      = ['name', 'category__name']
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     def get_queryset(self):
         return Product.objects.all().select_related('category').prefetch_related(
             'images', 'variants__stock', 'variants__color', 'variants__size'
@@ -113,7 +138,6 @@ class AdminProductViewSet(viewsets.ModelViewSet):
     # ── Image Upload ───────────────────────────────────────────────────────────
     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def upload_image(self, request, pk=None):
-        """Upload single image — supports JPG, PNG, WEBP, HEIC/HEIF."""
         from .image_upload import validate_and_process_image
         product = self.get_object()
 
@@ -142,7 +166,6 @@ class AdminProductViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get', 'post'], parser_classes=[MultiPartParser, FormParser])
     def images(self, request, pk=None):
-        """List or upload images — supports multiple files and HEIC/HEIF."""
         from .image_upload import validate_and_process_image
         product = self.get_object()
 
@@ -241,6 +264,11 @@ class AdminCategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by('-created_at')
     serializer_class = CategorySerializer
     parser_classes = [MultiPartParser, FormParser]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def perform_create(self, serializer):
         name = serializer.validated_data.get('name', '').strip()

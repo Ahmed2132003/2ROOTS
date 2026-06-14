@@ -34,11 +34,20 @@ class StockSerializer(serializers.ModelSerializer):
 
 class ProductImageSerializer(serializers.ModelSerializer):
     is_main = serializers.BooleanField(source='is_primary', required=False)
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductImage
         fields = ['id', 'image', 'alt_text', 'is_primary', 'is_main', 'order']
         read_only_fields = ['id']
+
+    def get_image(self, obj):
+        if not obj.image:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.image.url)
+        return obj.image.url
 
     def validate(self, attrs):
         request_data = getattr(self, 'initial_data', {}) or {}
@@ -140,8 +149,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return ProductSizeSerializer(sizes, many=True).data
 
 
-# ─── Admin Serializers (unchanged except adding new fields) ───────────────────
-
 class ProductWriteSerializer(serializers.ModelSerializer):
     variants = serializers.ListField(child=serializers.DictField(), required=False, write_only=True)
 
@@ -161,7 +168,6 @@ class ProductWriteSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
-        # Prevent discount_value > base_price for fixed discounts
         discount_type = attrs.get('discount_type')
         discount_value = attrs.get('discount_value')
         base_price = attrs.get('base_price')
