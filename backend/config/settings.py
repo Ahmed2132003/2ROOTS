@@ -133,6 +133,8 @@ CORS_ALLOWED_ORIGINS = [
     
 ]
 
+DJANGO_BASE_URL = config('DJANGO_BASE_URL', default='http://localhost:8081')
+
 # Redis & Celery
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 CELERY_BROKER_URL = REDIS_URL

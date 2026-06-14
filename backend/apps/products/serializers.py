@@ -1,5 +1,16 @@
 from rest_framework import serializers
+from django.conf import settings as django_settings
 from .models import Category, Product, ProductColor, ProductSize, ProductVariant, Stock, ProductImage
+
+
+def build_media_url(image_field):
+    """بيبني الـ URL الكامل للصورة باستخدام DJANGO_BASE_URL."""
+    if not image_field:
+        return None
+    base = getattr(django_settings, 'DJANGO_BASE_URL', '').rstrip('/')
+    if base:
+        return f"{base}{image_field.url}"
+    return image_field.url
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -20,10 +31,7 @@ class CategorySerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         if not obj.image:
             return None
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.image.url)
-        return obj.image.url
+        return build_media_url(obj.image)
 
 
 class StockSerializer(serializers.ModelSerializer):
@@ -44,10 +52,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         if not obj.image:
             return None
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(obj.image.url)
-        return obj.image.url
+        return build_media_url(obj.image)
 
     def validate(self, attrs):
         request_data = getattr(self, 'initial_data', {}) or {}
