@@ -1,6 +1,7 @@
 from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
+import logging
 
 from .models import Order, OrderStatusHistory, ShippingRegion
 from .serializers import (
@@ -11,6 +12,8 @@ from .serializers import (
     AdminOrderWriteSerializer,
 )
 from .services.email_service import OrderEmailService
+
+logger = logging.getLogger(__name__)
 
 
 class IsAdminOrStaff(permissions.BasePermission):
@@ -25,7 +28,13 @@ class CreateOrderView(APIView):
         serializer = CreateOrderSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
-        OrderEmailService.send_order_confirmation(order)
+
+        # Email is non-critical — never let it block the order response
+        try:
+            OrderEmailService.send_order_confirmation(order)
+        except Exception as exc:
+            logger.exception("Failed to send order confirmation email for order_id=%s: %s", order.id, exc)
+
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 
@@ -67,7 +76,12 @@ class CancelOrderView(APIView):
                 stock = item.variant.stock
                 stock.quantity += item.quantity
                 stock.save()
-        OrderEmailService.send_order_status_update(order, note='Your order was cancelled as requested.')
+
+        try:
+            OrderEmailService.send_order_status_update(order, note='Your order was cancelled as requested.')
+        except Exception as exc:
+            logger.exception("Failed to send cancellation email for order_id=%s: %s", order.id, exc)
+
         return Response({"detail": "Order cancelled successfully."})
 
 
@@ -144,7 +158,12 @@ class AdminUpdateOrderStatusView(APIView):
             changed_by=request.user,
             note=note,
         )
-        OrderEmailService.send_order_status_update(order, note=note)
+
+        try:
+            OrderEmailService.send_order_status_update(order, note=note)
+        except Exception as exc:
+            logger.exception("Failed to send status update email for order_id=%s: %s", order.id, exc)
+
         return Response(OrderSerializer(order).data)
 
 
