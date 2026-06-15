@@ -28,18 +28,19 @@ const T = {
 const FALLBACK_CART_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Crect width='240' height='240' fill='%230A0A0A'/%3E%3Ctext x='50%25' y='50%25' fill='%23D8D2C2' font-size='18' text-anchor='middle' dominant-baseline='middle' font-family='Arial,sans-serif' letter-spacing='3'%3ENO IMAGE%3C/text%3E%3C/svg%3E";
 
+// الباك شغال على 8081 دايماً
+const BACKEND_ORIGIN = import.meta.env.DJANGO_BASE_URL?.trim() || 'http://localhost:8081';
+
 function resolveCartImageUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return FALLBACK_CART_IMAGE;
   const url = rawUrl.trim();
   if (!url) return FALLBACK_CART_IMAGE;
-  if (/^(https?:)?\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) return url;
-  const configuredOrigin  = import.meta.env.VITE_API_ORIGIN?.trim();
-  const apiBaseUrl        = api?.defaults?.baseURL || '';
-  const match             = typeof apiBaseUrl === 'string' ? apiBaseUrl.match(/^https?:\/\/[^/]+/i) : null;
-  const apiOrigin         = configuredOrigin || match?.[0] || 'http://localhost:8080';
-  const mediaBase         = import.meta.env.VITE_MEDIA_BASE_URL || `${apiOrigin}/media/`;
-  if (url.startsWith('/')) return `${apiOrigin}${url}`;
-  return `${mediaBase.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
+  // URL كاملة — رجّعها زي ما هي
+  if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  // مسار نسبي يبدأ بـ /
+  if (url.startsWith('/')) return `${BACKEND_ORIGIN}${url}`;
+  // مسار بدون /
+  return `${BACKEND_ORIGIN}/media/${url.replace(/^\/+/, '')}`;
 }
 
 function normalizeShippingRegions(data) {
@@ -517,7 +518,7 @@ function OrderSummary({ cart, t, isRTL, onCheckout, isLoading, regions, selected
         </span>
       </div>
 
-      {/* Checkout CTA — white on black */}
+      {/* Checkout CTA */}
       <Motion.button
         whileHover={!isLoading && selectedRegion ? { background: T.stone } : {}}
         whileTap={selectedRegion ? { scale: 0.97 } : {}}
@@ -547,7 +548,7 @@ function OrderSummary({ cart, t, isRTL, onCheckout, isLoading, regions, selected
         )}
       </Motion.button>
 
-      {/* Continue shopping — ghost */}
+      {/* Continue shopping */}
       <Link to="/products" style={{ textDecoration: 'none' }}>
         <Motion.button
           whileHover={{ borderColor: T.stone, color: T.stone }}
@@ -711,7 +712,6 @@ export default function Cart() {
           }}
         >
           <div>
-            {/* eyebrow */}
             <div style={{
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: '11px', color: T.stone,
@@ -719,7 +719,6 @@ export default function Cart() {
             }}>
               ✦ {t('nav.cart')}
             </div>
-            {/* headline */}
             <h1 style={{
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 'clamp(36px, 6vw, 72px)',
