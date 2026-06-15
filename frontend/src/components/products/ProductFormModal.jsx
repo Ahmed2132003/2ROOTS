@@ -653,7 +653,7 @@ export default function ProductFormModal({
               <Toggle
                 id="has-variants"
                 checked={values.hasVariants}
-                onChange={(e) => setHasVariants(e?.target ? e.target.checked : !values.hasVariants)}
+                onChange={() => setHasVariants(!values.hasVariants)}
                 label="Has Variants"
               />
               <Toggle
