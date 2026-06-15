@@ -1,0 +1,18 @@
+# 2ROOTS — https://2roots.store
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /products/
+
+# منع صفحات الادمن والـ API
+Disallow: /dashboard/
+Disallow: /dashboard/*
+Disallow: /api/
+Disallow: /admin/
+Disallow: /checkout
+Disallow: /cart
+Disallow: /my-orders
+Disallow: /profile
+
+# السيتماب
+Sitemap: https://2roots.store/sitemap.xml

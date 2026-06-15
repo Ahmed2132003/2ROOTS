@@ -2,13 +2,95 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/2roots.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/2roots.png" />
-    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ═══ Viewport & Theme ═══ -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0A0A0A" />
-    <meta name="description" content="2ROOTS — Rooted in Struggle. Built for Greatness." />
-    <title>2ROOTS</title>
+
+    <!-- ═══ Primary SEO ═══ -->
+    <title>2ROOTS | تيشرتات وملابس أصيلة — Rooted in Struggle</title>
+    <meta name="description" content="2ROOTS — متجر ملابس مصري أصيل. تيشرتات، هوديز، وملابس ستايل فريد. شحن سريع لكل محافظات مصر. تسوق الآن على 2roots.store" />
+    <meta name="keywords" content="2roots, تيشرتات, ملابس, هوديز, ستايل, مصر, ملابس شباب, تيشرت مصري, ملابس كاجوال, 2roots store" />
+    <meta name="author" content="2ROOTS" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://2roots.store/" />
+
+    <!-- ═══ Open Graph (Facebook, WhatsApp, etc.) ═══ -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:url"         content="https://2roots.store/" />
+    <meta property="og:site_name"   content="2ROOTS" />
+    <meta property="og:title"       content="2ROOTS | تيشرتات وملابس أصيلة" />
+    <meta property="og:description" content="متجر ملابس مصري أصيل — تيشرتات وملابس ستايل فريد. شحن سريع لكل مصر." />
+    <meta property="og:image"       content="https://2roots.store/og-image.jpg" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale"      content="ar_EG" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- ═══ Twitter Card ═══ -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:site"        content="@2roots_store" />
+    <meta name="twitter:title"       content="2ROOTS | تيشرتات وملابس أصيلة" />
+    <meta name="twitter:description" content="متجر ملابس مصري أصيل — تيشرتات وملابس ستايل فريد. شحن سريع لكل مصر." />
+    <meta name="twitter:image"       content="https://2roots.store/og-image.jpg" />
+
+    <!-- ═══ Icons & PWA ═══ -->
+    <link rel="icon"             type="image/png"  href="/2roots.png" />
+    <link rel="apple-touch-icon" sizes="180x180"   href="/2roots.png" />
+    <link rel="manifest"                           href="/manifest.json" />
+
+    <!-- ═══ Structured Data — Organization ═══ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ClothingStore",
+      "name": "2ROOTS",
+      "alternateName": "2Roots Store",
+      "url": "https://2roots.store",
+      "logo": "https://2roots.store/2roots.png",
+      "image": "https://2roots.store/og-image.jpg",
+      "description": "متجر ملابس مصري أصيل — تيشرتات، هوديز، وملابس ستايل فريد. Rooted in Struggle, Built for Greatness.",
+      "email": "2roots2store@gmail.com",
+      "telephone": "+201272615244",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "الإسماعيلية",
+        "addressCountry": "EG"
+      },
+      "sameAs": [
+        "https://2roots.store"
+      ],
+      "currenciesAccepted": "EGP",
+      "paymentAccepted": "Cash on Delivery",
+      "areaServed": {
+        "@type": "Country",
+        "name": "Egypt"
+      },
+      "priceRange": "$$"
+    }
+    </script>
+
+    <!-- ═══ Structured Data — WebSite (enables Sitelinks Searchbox) ═══ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "2ROOTS",
+      "url": "https://2roots.store",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://2roots.store/products?search={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <!-- ═══ Preconnect for performance ═══ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://2roots.store" />
   </head>
   <body>
     <div id="root"></div>
