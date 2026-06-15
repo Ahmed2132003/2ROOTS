@@ -17,6 +17,19 @@ class OrderEmailService:
         base_url = getattr(settings, 'ORDER_TRACKING_BASE_URL', 'https://yourdomain.com')
         return f"{base_url.rstrip('/')}/track/{order_id}"
 
+    @staticmethod
+    def _item_name(item) -> str:
+        """Safely resolve product name from OrderItem regardless of model shape."""
+        try:
+            return item.variant.product.name
+        except AttributeError:
+            pass
+        try:
+            return item.product.name
+        except AttributeError:
+            pass
+        return getattr(item, 'name', 'Unknown Product')
+
     @classmethod
     def send_order_confirmation(cls, order) -> bool:
         """Send confirmation email to customer + admin notification."""
@@ -36,7 +49,7 @@ class OrderEmailService:
 
         # Send to customer
         result = cls._send_email(
-            subject='Order Confirmation',
+            subject='Order Confirmation — 2Roots',
             body=text_content,
             to_emails=[recipient],
             html_content=html_content,
@@ -57,40 +70,111 @@ class OrderEmailService:
             logger.warning("ADMIN_ORDER_EMAIL not set — skipping admin notification for order_id=%s", order.id)
             return False
 
-        customer_name = getattr(order.customer, 'get_full_name', lambda: '')() or getattr(order.customer, 'username', 'Unknown')
+        customer_name  = getattr(order.customer, 'get_full_name', lambda: '')() or getattr(order.customer, 'username', 'Unknown')
         customer_email = getattr(order.customer, 'email', 'N/A')
 
+        # ── Plain-text body ──────────────────────────────────────────────────
         items_lines = '\n'.join(
-            f"  - {item.product.name} × {item.quantity}  ({item.price} EGP)"
-            for item in order.items.all()
+            f"  - {cls._item_name(item)} × {item.quantity}  ({item.price} EGP)"
+            for item in order.items.select_related('variant__product').all()
         )
+
+        # Shipping info
+        shipping_name    = getattr(order, 'shipping_name',    '') or customer_name
+        shipping_phone   = getattr(order, 'shipping_phone',   'N/A')
+        shipping_address = getattr(order, 'shipping_address', 'N/A')
+        shipping_city    = getattr(order, 'shipping_city',    '')
+        shipping_region  = getattr(order, 'shipping_region',  None)
+        region_name      = getattr(shipping_region, 'name', '') if shipping_region else ''
+        full_address     = ', '.join(filter(None, [shipping_address, shipping_city, region_name]))
 
         body = (
-            f"🛒 New Order Received — #{order.id}\n\n"
-            f"Customer : {customer_name}\n"
-            f"Email    : {customer_email}\n"
-            f"Total    : {order.total_price} EGP\n"
-            f"Status   : {order.get_status_display()}\n\n"
-            f"Items:\n{items_lines}\n\n"
-            f"Tracking : {cls._tracking_link(order.id)}"
+            f"🛒 NEW ORDER — #{order.id}\n"
+            f"{'='*40}\n\n"
+            f"👤 Customer   : {customer_name}\n"
+            f"📧 Email      : {customer_email}\n"
+            f"📞 Phone      : {shipping_phone}\n"
+            f"📦 Ship To    : {shipping_name}\n"
+            f"📍 Address    : {full_address}\n\n"
+            f"{'─'*40}\n"
+            f"🧾 Items:\n{items_lines}\n"
+            f"{'─'*40}\n"
+            f"💰 Total      : {order.total_price} EGP\n"
+            f"📋 Status     : {order.get_status_display()}\n\n"
+            f"🔗 Track Order: {cls._tracking_link(order.id)}\n"
         )
 
-        html_content = (
-            f"<h2>🛒 New Order — #{order.id}</h2>"
-            f"<p><b>Customer:</b> {customer_name}<br>"
-            f"<b>Email:</b> {customer_email}<br>"
-            f"<b>Total:</b> {order.total_price} EGP<br>"
-            f"<b>Status:</b> {order.get_status_display()}</p>"
-            f"<h3>Items</h3><ul>"
-            + ''.join(
-                f"<li>{item.product.name} × {item.quantity} — {item.price} EGP</li>"
-                for item in order.items.all()
-            )
-            + f"</ul><p><a href='{cls._tracking_link(order.id)}'>Track Order</a></p>"
+        # ── HTML body ────────────────────────────────────────────────────────
+        items_html = ''.join(
+            f"<tr>"
+            f"<td style='padding:8px 12px;border-bottom:1px solid #222;'>{cls._item_name(item)}</td>"
+            f"<td style='padding:8px 12px;border-bottom:1px solid #222;text-align:center;'>{item.quantity}</td>"
+            f"<td style='padding:8px 12px;border-bottom:1px solid #222;text-align:right;'>{item.price} EGP</td>"
+            f"</tr>"
+            for item in order.items.select_related('variant__product').all()
         )
+
+        html_content = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#d8d2c2;padding:32px;border-radius:4px;">
+          <h2 style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:#fff;margin:0 0 4px;">
+            🛒 NEW ORDER
+          </h2>
+          <p style="color:#b89b5e;font-size:13px;letter-spacing:2px;margin:0 0 24px;">ORDER #{order.id}</p>
+
+          <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+            <tr>
+              <td style="padding:8px 0;color:#888;font-size:12px;width:120px;">Customer</td>
+              <td style="padding:8px 0;color:#fff;font-size:13px;">{customer_name}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#888;font-size:12px;">Email</td>
+              <td style="padding:8px 0;color:#fff;font-size:13px;">{customer_email}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#888;font-size:12px;">Phone</td>
+              <td style="padding:8px 0;color:#fff;font-size:13px;">{shipping_phone}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#888;font-size:12px;">Ship To</td>
+              <td style="padding:8px 0;color:#fff;font-size:13px;">{shipping_name}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#888;font-size:12px;">Address</td>
+              <td style="padding:8px 0;color:#fff;font-size:13px;">{full_address}</td>
+            </tr>
+          </table>
+
+          <h3 style="font-size:12px;letter-spacing:3px;color:#888;text-transform:uppercase;margin:0 0 12px;border-top:1px solid #222;padding-top:20px;">
+            Items
+          </h3>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">
+            <thead>
+              <tr style="background:#111;">
+                <th style="padding:10px 12px;text-align:left;color:#888;font-size:11px;letter-spacing:2px;font-weight:400;">PRODUCT</th>
+                <th style="padding:10px 12px;text-align:center;color:#888;font-size:11px;letter-spacing:2px;font-weight:400;">QTY</th>
+                <th style="padding:10px 12px;text-align:right;color:#888;font-size:11px;letter-spacing:2px;font-weight:400;">PRICE</th>
+              </tr>
+            </thead>
+            <tbody style="color:#d8d2c2;">
+              {items_html}
+            </tbody>
+          </table>
+
+          <div style="background:#111;border:1px solid #222;border-radius:4px;padding:16px 20px;margin-bottom:24px;display:flex;justify-content:space-between;">
+            <span style="font-size:12px;letter-spacing:2px;color:#888;">TOTAL</span>
+            <span style="font-size:22px;color:#fff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;">{order.total_price} EGP</span>
+          </div>
+
+          <a href="{cls._tracking_link(order.id)}"
+             style="display:block;background:#fff;color:#0a0a0a;text-align:center;padding:14px;border-radius:2px;
+                    font-size:12px;letter-spacing:3px;font-weight:700;text-decoration:none;">
+            VIEW ORDER →
+          </a>
+        </div>
+        """
 
         return cls._send_email(
-            subject=f"[2Roots] New Order #{order.id} from {customer_name}",
+            subject=f"[2Roots] 🛒 New Order #{order.id} — {customer_name} ({order.total_price} EGP)",
             body=body,
             to_emails=[admin_email],
             html_content=html_content,
@@ -115,7 +199,7 @@ class OrderEmailService:
         text_content = strip_tags(html_content)
 
         return cls._send_email(
-            subject=f"Order #{order.id} Status Update",
+            subject=f"Order #{order.id} Status Update — 2Roots",
             body=text_content,
             to_emails=[recipient],
             html_content=html_content,
@@ -126,9 +210,9 @@ class OrderEmailService:
     @staticmethod
     def _default_status_note(status: str) -> str:
         notes = {
-            'pending': 'Your order is pending review and will be confirmed shortly.',
+            'pending':   'Your order is pending review and will be confirmed shortly.',
             'confirmed': 'Your order has been confirmed and is now being prepared.',
-            'shipped': 'Great news! Your order has been shipped and is on the way.',
+            'shipped':   'Great news! Your order has been shipped and is on the way.',
             'delivered': 'Your order has been delivered. Thank you for shopping with us!',
             'cancelled': 'Your order has been cancelled. Contact support if you need help.',
         }
