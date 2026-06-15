@@ -30,6 +30,12 @@ class OrderEmailService:
             pass
         return getattr(item, 'name', 'Unknown Product')
 
+    @staticmethod
+    def _order_total(order) -> str:
+        """Safely resolve total from order regardless of field name."""
+        total = getattr(order, 'total', None) or getattr(order, 'total_price', None) or 0
+        return total
+
     @classmethod
     def send_order_confirmation(cls, order) -> bool:
         """Send confirmation email to customer + admin notification."""
@@ -72,6 +78,7 @@ class OrderEmailService:
 
         customer_name  = getattr(order.customer, 'get_full_name', lambda: '')() or getattr(order.customer, 'username', 'Unknown')
         customer_email = getattr(order.customer, 'email', 'N/A')
+        order_total    = cls._order_total(order)
 
         # ── Plain-text body ──────────────────────────────────────────────────
         items_lines = '\n'.join(
@@ -99,7 +106,7 @@ class OrderEmailService:
             f"{'─'*40}\n"
             f"🧾 Items:\n{items_lines}\n"
             f"{'─'*40}\n"
-            f"💰 Total      : {order.total_price} EGP\n"
+            f"💰 Total      : {order_total} EGP\n"
             f"📋 Status     : {order.get_status_display()}\n\n"
             f"🔗 Track Order: {cls._tracking_link(order.id)}\n"
         )
@@ -162,7 +169,7 @@ class OrderEmailService:
 
           <div style="background:#111;border:1px solid #222;border-radius:4px;padding:16px 20px;margin-bottom:24px;display:flex;justify-content:space-between;">
             <span style="font-size:12px;letter-spacing:2px;color:#888;">TOTAL</span>
-            <span style="font-size:22px;color:#fff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;">{order.total_price} EGP</span>
+            <span style="font-size:22px;color:#fff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;">{order_total} EGP</span>
           </div>
 
           <a href="{cls._tracking_link(order.id)}"
@@ -174,7 +181,7 @@ class OrderEmailService:
         """
 
         return cls._send_email(
-            subject=f"[2Roots] 🛒 New Order #{order.id} — {customer_name} ({order.total_price} EGP)",
+            subject=f"[2Roots] 🛒 New Order #{order.id} — {customer_name} ({order_total} EGP)",
             body=body,
             to_emails=[admin_email],
             html_content=html_content,
