@@ -93,7 +93,7 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
         borderRadius: '4px',
         padding:    '20px',
         display:    'grid',
-        gridTemplateColumns: '88px 1fr auto',
+        gridTemplateColumns: '100px 1fr auto',
         gap:        '20px',
         alignItems: 'start',
         opacity:    removing ? 0.45 : 1,
@@ -103,7 +103,8 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
       {/* ── Image ── */}
       <Link to={`/products/${item.variant?.product?.slug || ''}`}>
         <div style={{
-          width: '88px', height: '110px',
+          width: '100px',
+          aspectRatio: '3/4',
           borderRadius: '4px', overflow: 'hidden',
           background: T.bgHover, flexShrink: 0,
         }}>
@@ -113,7 +114,7 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
               src={imageSrc}
               alt={item.variant?.product?.name}
               onError={() => setImageError(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
             />
           ) : (
             <div style={{
