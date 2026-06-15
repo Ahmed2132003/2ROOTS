@@ -91,22 +91,22 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
         background: T.bgCard,
         border:     `1px solid ${T.border}`,
         borderRadius: '4px',
-        padding:    '20px',
-        display:    'grid',
-        gridTemplateColumns: '100px 1fr auto',
-        gap:        '20px',
-        alignItems: 'start',
+        padding:    '16px',
+        display:    'flex',
+        flexDirection: 'row',
+        gap:        '16px',
+        alignItems: 'flex-start',
         opacity:    removing ? 0.45 : 1,
         transition: 'opacity 0.3s, border-color 0.25s',
       }}
     >
       {/* ── Image ── */}
-      <Link to={`/products/${item.variant?.product?.slug || ''}`}>
+      <Link to={`/products/${item.variant?.product?.slug || ''}`} style={{ flexShrink: 0 }}>
         <div style={{
-          width: '100px',
-          aspectRatio: '3/4',
+          width: '110px',
+          height: '140px',
           borderRadius: '4px', overflow: 'hidden',
-          background: T.bgHover, flexShrink: 0,
+          background: T.bgHover,
         }}>
           {productImage ? (
             <img
@@ -114,7 +114,7 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
               src={imageSrc}
               alt={item.variant?.product?.name}
               onError={() => setImageError(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', display: 'block' }}
             />
           ) : (
             <div style={{
@@ -131,7 +131,7 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
       </Link>
 
       {/* ── Info ── */}
-      <div>
+      <div style={{ flex: 1, minWidth: 0 }}>
         {/* Category */}
         <div style={{
           fontFamily: "'Bebas Neue', sans-serif",
@@ -233,6 +233,7 @@ function CartItemRow({ item, index, t, isRTL, onUpdate, onRemove }) {
       <div style={{
         display: 'flex', flexDirection: 'column',
         alignItems: 'flex-end', gap: '10px',
+        flexShrink: 0,
       }}>
         {/* Subtotal */}
         <div style={{
