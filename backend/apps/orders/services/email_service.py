@@ -18,21 +18,7 @@ class OrderEmailService:
         return f"{base_url.rstrip('/')}/track/{order_id}"
 
     @staticmethod
-    def _item_name(item) -> str:
-        """Safely resolve product name from OrderItem regardless of model shape."""
-        try:
-            return item.variant.product.name
-        except AttributeError:
-            pass
-        try:
-            return item.product.name
-        except AttributeError:
-            pass
-        return getattr(item, 'name', 'Unknown Product')
-
-    @staticmethod
     def _order_total(order) -> str:
-        """Safely resolve total from order regardless of field name."""
         total = getattr(order, 'total', None) or getattr(order, 'total_price', None) or 0
         return total
 
@@ -53,7 +39,6 @@ class OrderEmailService:
         html_content = render_to_string('orders/emails/order_confirmation.html', context)
         text_content = strip_tags(html_content)
 
-        # Send to customer
         result = cls._send_email(
             subject='Order Confirmation — 2Roots',
             body=text_content,
@@ -63,9 +48,7 @@ class OrderEmailService:
             email_type='order_confirmation',
         )
 
-        # Send admin notification
         cls._send_admin_notification(order)
-
         return result
 
     @classmethod
@@ -80,20 +63,20 @@ class OrderEmailService:
         customer_email = getattr(order.customer, 'email', 'N/A')
         order_total    = cls._order_total(order)
 
-        # ── Plain-text body ──────────────────────────────────────────────────
+        # ── الـ items من الـ snapshot المحفوظ في الأوردر مباشرة ──
+        all_items = order.items.all()
+
+        # Plain-text body
         items_lines = '\n'.join(
-            f"  - {cls._item_name(item)} × {item.quantity}  ({item.price} EGP)"
-            for item in order.items.select_related('variant__product').all()
+            f"  - {item.product_name} ({item.variant_name}) × {item.quantity}  ({item.price_at_order} EGP)"
+            for item in all_items
         )
 
         # Shipping info
         shipping_name    = getattr(order, 'shipping_name',    '') or customer_name
         shipping_phone   = getattr(order, 'shipping_phone',   'N/A')
         shipping_address = getattr(order, 'shipping_address', 'N/A')
-        shipping_city    = getattr(order, 'shipping_city',    '')
-        shipping_region  = getattr(order, 'shipping_region',  None)
-        region_name      = getattr(shipping_region, 'name', '') if shipping_region else ''
-        full_address     = ', '.join(filter(None, [shipping_address, shipping_city, region_name]))
+        shipping_region  = getattr(order, 'shipping_region',  '')
 
         body = (
             f"🛒 NEW ORDER — #{order.id}\n"
@@ -102,7 +85,7 @@ class OrderEmailService:
             f"📧 Email      : {customer_email}\n"
             f"📞 Phone      : {shipping_phone}\n"
             f"📦 Ship To    : {shipping_name}\n"
-            f"📍 Address    : {full_address}\n\n"
+            f"📍 Address    : {shipping_address}, {shipping_region}\n\n"
             f"{'─'*40}\n"
             f"🧾 Items:\n{items_lines}\n"
             f"{'─'*40}\n"
@@ -111,14 +94,15 @@ class OrderEmailService:
             f"🔗 Track Order: {cls._tracking_link(order.id)}\n"
         )
 
-        # ── HTML body ────────────────────────────────────────────────────────
+        # HTML body
         items_html = ''.join(
             f"<tr>"
-            f"<td style='padding:8px 12px;border-bottom:1px solid #222;'>{cls._item_name(item)}</td>"
+            f"<td style='padding:8px 12px;border-bottom:1px solid #222;'>{item.product_name}<br>"
+            f"<span style='color:#888;font-size:11px;'>{item.variant_name}</span></td>"
             f"<td style='padding:8px 12px;border-bottom:1px solid #222;text-align:center;'>{item.quantity}</td>"
-            f"<td style='padding:8px 12px;border-bottom:1px solid #222;text-align:right;'>{item.price} EGP</td>"
+            f"<td style='padding:8px 12px;border-bottom:1px solid #222;text-align:right;'>{item.price_at_order} EGP</td>"
             f"</tr>"
-            for item in order.items.select_related('variant__product').all()
+            for item in all_items
         )
 
         html_content = f"""
@@ -147,7 +131,7 @@ class OrderEmailService:
             </tr>
             <tr>
               <td style="padding:8px 0;color:#888;font-size:12px;">Address</td>
-              <td style="padding:8px 0;color:#fff;font-size:13px;">{full_address}</td>
+              <td style="padding:8px 0;color:#fff;font-size:13px;">{shipping_address}, {shipping_region}</td>
             </tr>
           </table>
 
@@ -167,9 +151,9 @@ class OrderEmailService:
             </tbody>
           </table>
 
-          <div style="background:#111;border:1px solid #222;border-radius:4px;padding:16px 20px;margin-bottom:24px;display:flex;justify-content:space-between;">
+          <div style="background:#111;border:1px solid #222;border-radius:4px;padding:16px 20px;margin-bottom:24px;">
             <span style="font-size:12px;letter-spacing:2px;color:#888;">TOTAL</span>
-            <span style="font-size:22px;color:#fff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;">{order_total} EGP</span>
+            <span style="font-size:22px;color:#fff;font-family:'Bebas Neue',sans-serif;letter-spacing:2px;float:right;">{order_total} EGP</span>
           </div>
 
           <a href="{cls._tracking_link(order.id)}"
