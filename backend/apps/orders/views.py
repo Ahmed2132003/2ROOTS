@@ -180,7 +180,6 @@ class AdminUpdateOrderStatusView(APIView):
         new_status = serializer.validated_data['status']
         note       = serializer.validated_data.get('note', '')
 
-        # منع الـ rollback — الأوردر ميرجعش لـ status قديم
         STATUS_FLOW = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
         if STATUS_FLOW.index(new_status) < STATUS_FLOW.index(old_status):
             return Response(
@@ -221,8 +220,8 @@ class AdminOrderManageView(generics.RetrieveUpdateDestroyAPIView):
 class ShippingRegionListCreateView(generics.ListCreateAPIView):
     queryset = ShippingRegion.objects.all()
     permission_classes = [permissions.IsAuthenticated]
-    pagination_class = None  # شيل الـ pagination عن المناطق — العدد محدود وثابت أصلاً
-
+    pagination_class = None  
+    
     def get_permissions(self):
         if self.request.method == 'GET':
             return [permissions.IsAuthenticated()]
