@@ -221,6 +221,7 @@ class AdminOrderManageView(generics.RetrieveUpdateDestroyAPIView):
 class ShippingRegionListCreateView(generics.ListCreateAPIView):
     queryset = ShippingRegion.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # شيل الـ pagination عن المناطق — العدد محدود وثابت أصلاً
 
     def get_permissions(self):
         if self.request.method == 'GET':
