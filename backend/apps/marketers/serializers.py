@@ -155,3 +155,101 @@ class WithdrawalRequestSerializer(serializers.ModelSerializer):
             'id', 'marketer_email', 'cycle_number',
             'created_at', 'resolved_at',
         ]
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MarketerOrder — Create (يستخدمه المسوق لتسجيل أوردر جديد)
+# ─────────────────────────────────────────────────────────────────────────────
+class MarketerOrderCreateSerializer(serializers.ModelSerializer):
+    """
+    POST /api/marketers/me/orders/
+
+    - يجيب MarketerProductPrice الخاص بالمسوق+المنتج، ولو غير موجود يرفض بوضوح.
+    - assigned_price_per_unit = snapshot من السعر الحالي وقت التسجيل.
+    - profit_amount = (sale_price_per_unit - assigned_price_per_unit) * quantity.
+    """
+    product_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = MarketerOrder
+        fields = [
+            'id', 'product_id', 'quantity', 'sale_price_per_unit',
+            'customer_name', 'customer_phone',
+            # read-only output (تُحسب في create، الكلاينت مش بيبعتها)
+            'assigned_price_per_unit', 'profit_amount', 'status', 'created_at',
+        ]
+        read_only_fields = [
+            'id', 'assigned_price_per_unit', 'profit_amount', 'status', 'created_at',
+        ]
+
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("الكمية يجب أن تكون أكبر من صفر.")
+        return value
+
+    def validate_sale_price_per_unit(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("سعر البيع يجب أن يكون أكبر من صفر.")
+        return value
+
+    def validate(self, attrs):
+        request = self.context['request']
+        marketer = request.user.marketer_profile
+        product_id = attrs.get('product_id')
+
+        price_entry = (
+            MarketerProductPrice.objects
+            .filter(marketer=marketer, product_id=product_id)
+            .first()
+        )
+        if not price_entry:
+            raise serializers.ValidationError({
+                'product_id': "مفيش سعر محدد لك على هذا المنتج، تواصل مع الإدارة."
+            })
+
+        # نمررهم لـ create() بدون لمس attrs الأصلية اللي هتروح لـ ModelSerializer
+        attrs['_marketer'] = marketer
+        attrs['_price_entry'] = price_entry
+        return attrs
+
+    def create(self, validated_data):
+        marketer = validated_data.pop('_marketer')
+        price_entry = validated_data.pop('_price_entry')
+        product_id = validated_data.pop('product_id')
+
+        quantity = validated_data['quantity']
+        sale_price_per_unit = validated_data['sale_price_per_unit']
+        assigned_price_per_unit = price_entry.assigned_price
+        profit_amount = (sale_price_per_unit - assigned_price_per_unit) * quantity
+
+        return MarketerOrder.objects.create(
+            marketer=marketer,
+            product_id=product_id,
+            quantity=quantity,
+            sale_price_per_unit=sale_price_per_unit,
+            assigned_price_per_unit=assigned_price_per_unit,
+            profit_amount=profit_amount,
+            customer_name=validated_data['customer_name'],
+            customer_phone=validated_data['customer_phone'],
+            status='pending',
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MarketerOrder — Read (لقوائم الأدمن، ولاحقًا للمسوق في A8)
+# ─────────────────────────────────────────────────────────────────────────────
+class MarketerOrderSerializer(serializers.ModelSerializer):
+    marketer_email = serializers.CharField(source='marketer.user.email', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True, default=None)
+
+    class Meta:
+        model = MarketerOrder
+        fields = [
+            'id', 'marketer', 'marketer_email', 'product', 'product_name',
+            'quantity', 'sale_price_per_unit', 'assigned_price_per_unit',
+            'profit_amount', 'customer_name', 'customer_phone',
+            'status', 'is_counted', 'counted_in_cycle_number',
+            'counted_towards_leader', 'created_at', 'confirmed_at',
+        ]
+        read_only_fields = fields

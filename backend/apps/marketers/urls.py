@@ -1,12 +1,9 @@
-"""
-apps/marketers/urls.py
-
-الـ URL patterns الكاملة هتتكتب في Parts التالية (A2, A4, A6, A7, A8).
-"""
 from django.urls import path
+
+from .views import MyMarketerOrderCreateView
 
 app_name = 'marketers'
 
 urlpatterns = [
-    # Part A2+: سيُضاف هنا
+    path('me/orders/', MyMarketerOrderCreateView.as_view(), name='my-order-create'),
 ]

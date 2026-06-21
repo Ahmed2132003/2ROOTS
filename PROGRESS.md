@@ -8,11 +8,11 @@
 
 | الموديل | الغرض |
 |---------|-------|
-| `User` (AbstractUser) | Custom user بـ `role` field: `admin` / `staff` / `customer`. الـ `USERNAME_FIELD` هو `email`. لا يوجد `marketer` في الـ roles الحالية — هنضيفها. |
+| `User` (AbstractUser) | Custom user بـ `role` field: `admin` / `staff` / `customer` / `marketer`. الـ `USERNAME_FIELD` هو `email`. |
 | `CustomerProfile` | OneToOne مع User، بيانات إضافية للعملاء فقط (صورة، تاريخ ميلاد). |
 | `CustomerAccount` | موديل مستقل (مش FK لـ User) — يمثل "عميل" بناءً على اسم+إيميل+تليفون، بيتبنى أوتوماتيك من الأوردرات. مش شرط يكون عنده حساب على الموقع. |
 
-**Permission pattern**: `IsAdminOrStaff` class في `dashboard/views.py` بتتحقق من `user.role in ['admin', 'staff']` — هنتبع نفس الباترن ده في الـ apps الجديدة.
+**Permission pattern**: `IsAdminOrStaff` class في `dashboard/views.py` بتتحقق من `user.role in ['admin', 'staff']`. في `apps/marketers` تم تكرار نفس المنطق محليًا في `permissions.py` (راجع تقرير Part A2 لسبب القرار).
 
 **Auth**: JWT عبر `rest_framework_simplejwt`.
 
@@ -30,6 +30,8 @@
 | `ProductColor`, `ProductSize` | جداول مستقلة. |
 
 **كيف السعر بيتحسب حالياً**: `CartItem.subtotal = variant.effective_price × quantity`. الـ `effective_price` على `ProductVariant` بيطبق خصم المنتج على `price_override` أو `base_price`. **لا يوجد wholesale tiering حالياً**.
+
+ملاحظة مهمة لـ Part A2: نظام المسوقين (`MarketerOrder`, `MarketerProductPrice`) بيربط مباشرة بـ `apps.products.Product` (المنتج الأساسي)، **مش** بـ `ProductVariant` — لأن خطة النظام (A System) ما ذكرتش variants، والتسعير للمسوق على مستوى المنتج ككل. هذا قرار موروث من Part A1 ولم يتغيّر في A2.
 
 ---
 
@@ -86,15 +88,18 @@
 
 ### 2. Role "marketer" في User
 
-سنضيف `marketer` لـ `ROLE_CHOICES` في `apps/users/models.py`:
-```
-('marketer', 'Marketer'),
-```
-الـ `Marketer` model في `apps/marketers` سيكون OneToOne مع `User` حيث `user.role == 'marketer'`.
+تمت إضافة `('marketer', 'Marketer')` لـ `ROLE_CHOICES` في `apps/users/models.py` (منفذ في A1).
+الـ `Marketer` model في `apps/marketers` OneToOne مع `User` حيث `user.role == 'marketer'`.
+
+> **ملاحظة توضيح دقيقة (تُوثَّق هنا الآن، Part A2):**
+> `User.role` يبقى `'marketer'` ثابت طول الوقت (مجرد تصنيف عام على مستوى الحساب).
+> `Marketer.role` هو اللي يتغيّر بين `'marketer'` و `'team_leader'` (الحالة التفصيلية داخل نظام المسوقين فقط).
+> الـ Permission class `IsMarketer` في `apps/marketers/permissions.py` بتفحص `User.role in ('marketer', 'team_leader')` تحسبًا، لكن عمليًا `User.role` يفضل `'marketer'` دائمًا حسب التصميم الحالي.
+> **قرار يحتاج تأكيدك:** هل `User.role` نفسه يجب أن يتغير لـ `'team_leader'` عند الترقية، أم يكفي تغيير `Marketer.role` فقط (وهو الافتراض المعتمد الآن: لا نغيّر `User.role` أبدًا بعد الإنشاء)؟
 
 ### 3. MarketerOrder — موديل منفصل (قرار ثابت)
 
-`MarketerOrder` سيكون موديلاً منفصلاً تماماً عن `Order` العادي لأن:
+`MarketerOrder` موديل منفصل تماماً عن `Order` العادي لأن:
 - مفيش Cart، مفيش دفع أونلاين، مفيش shipping address بالتفصيل
 - المسوق هو اللي بيدخل بيانات العميل والسعر يدوياً
 - لا علاقة له بـ `apps/invoices` أو `apps/cart`
@@ -105,39 +110,45 @@
 ```
 السعر النهائي = (سعر الجملة المناسب للكمية) ثم يُطبق عليه الخصم
 ```
-أي:
-1. `unit_price = Product.get_price_for_quantity(quantity)` — يأخذ wholesale tier لو موجود
-2. `subtotal = unit_price × quantity`
-3. `discount_amount` يُحسب على إجمالي الكارت (أو الجزء المنطبق عليه)
-4. `order_total = subtotal_after_wholesale - discount_amount + shipping_fee`
 
 ### 5. MarketerOrder والخصم (A + C)
 
-نظام المسوقين **مستقل تماماً** عن Cart/Order العادي. الـ `MarketerOrder` لا يستخدم discount codes — المسوق بيدخل السعر اللي باع بيه مباشرة.
+نظام المسوقين **مستقل تماماً** عن Cart/Order العادي. الـ `MarketerOrder` لا يستخدم discount codes.
 
 ### 6. طلب سحب الأرباح (Part A6)
 
-الرصيد يُخصم/يُحجز فوراً عند تقديم الطلب (لمنع طلب نفس الرصيد مرتين). لو الأدمن رفض الطلب، يرجع الرصيد.
+الرصيد يُخصم/يُحجز فوراً عند تقديم الطلب. لو الأدمن رفض الطلب، يرجع الرصيد.
 
 ### 7. خصم الـ Discount Code على منتجات محددة (Part C1)
 
-لو `applies_to = specific_products`، الخصم يُحسب على إجمالي المنتجات المنطبقة فقط (مش كل الكارت). **هذا القرار يحتاج تأكيد من صاحب المشروع** — موضّح في تقرير Part C1.
+يحتاج تأكيد من صاحب المشروع — موضّح في تقرير Part C1 (لسه لم يُنفَّذ).
 
 ### 8. Constants في settings.py
 
 ```python
-# Marketer System Constants
-MARKETER_MONTHLY_TARGET_ORDERS = 10      # عدد الأوردرات المطلوب للترقية
-MARKETER_MIN_TEAM_MEMBERS = 10           # الحد الأدنى للمسوقين عند الترقية
-MARKETER_CYCLE_DAYS = 30                 # مدة الدورة الشهرية بالأيام
+MARKETER_MONTHLY_TARGET_ORDERS = 10
+MARKETER_MIN_TEAM_MEMBERS = 10
+MARKETER_CYCLE_DAYS = 30
 ```
 
 ### 9. Convention التسمية
 
 - **Backend**: snake_case للـ models والـ fields، PascalCase للـ classes
 - **Frontend**: PascalCase للـ components، camelCase للـ functions
-- **APIs**: `/api/marketers/...` للمسوق، `/api/dashboard/marketers/...` للأدمن
+- **APIs**: `/api/marketers/...` للمسوق، `/api/dashboard/...` للأدمن
 - **Files**: نفس pattern الموجود: `apps/[domain]/models.py`, `views.py`, `serializers.py`, `urls.py`, `signals.py`, `admin.py`
+
+### 10. (جديد — Part A2) فصل urls.py عن dashboard_urls.py
+
+لأن مسارات الأدمن (`/api/dashboard/marketer-orders/...`) **لا** تقع تحت `/api/dashboard/marketers/...` (الخطة الأصلية كتبت `marketer-orders` مباشرة تحت `/api/dashboard/`، مش متداخلة)، تم فصلهم لملفين:
+- `apps/marketers/urls.py` → يُضمَّن تحت `path('api/marketers/', include(...))`
+- `apps/marketers/dashboard_urls.py` → يُضمَّن تحت `path('api/dashboard/', include(...))`
+
+**قرار يحتاج تأكيد**: لو فيه باترن مختلف بالفعل في `apps/orders` أو `apps/invoices` لربط مسارات `/api/dashboard/`، وحّد عليه بدل هذا الفصل (راجع كيف بيضيف `apps/invoices/urls.py` مساراته تحت dashboard فعليًا قبل أي Part جاي يعتمد على نفس الباترن).
+
+### 11. (جديد — Part A2) Permission classes محلية
+
+تم إنشاء `apps/marketers/permissions.py` بنسخة محلية من `IsAdminOrStaff` (نفس منطق `dashboard/views.py`) + `IsMarketer` جديدة. لم نستورد من `dashboard/views.py` مباشرة تجنبًا لـ circular imports محتملة ولعدم التأكد من شكل التصدير الفعلي هناك. **قرار يحتاج تأكيد**: لو `IsAdminOrStaff` مُصدَّرة بشكل صريح وقابلة لإعادة الاستخدام من `apps.dashboard.permissions` (أو مكان مشابه)، الأفضل نوحّد عليها بدل التكرار — عدّلها في أي Part جاي لو أكدت.
 
 ---
 
@@ -147,75 +158,64 @@ MARKETER_CYCLE_DAYS = 30                 # مدة الدورة الشهرية ب
 
 ### Part A1 — موديلز نظام المسوقين (النسخة المعدّلة)
 
-**الملفات المُنشأة:**
+*(دون تغيير — راجع النسخة السابقة لتفاصيل الموديلز والعلاقات والقرارات. بالملخص: 8 موديلز أساسية، `MarketerOrder` منفصل عن `Order`، حقل `counted_towards_leader` يُعبَّأ وقت `confirm`، `referral_code` بـ uuid4، `cycle_anchor_date` تلقائي وقت الإنشاء.)*
 
-| الملف | الغرض |
-|-------|-------|
-| `apps/marketers/__init__.py` | |
-| `apps/marketers/apps.py` | `MarketersConfig` |
-| `apps/marketers/models.py` | الـ 8 موديلز الأساسية |
-| `apps/marketers/admin.py` | تسجيل الموديلز في الـ Admin |
-| `apps/marketers/serializers.py` | Serializers أساسية لكل الموديلز |
-| `apps/marketers/views.py` | Placeholder + Permission classes |
-| `apps/marketers/urls.py` | فارغ الآن، يُعبَّأ في A2+ |
-| `apps/marketers/signals.py` | Signal لضمان cycle_anchor_date |
-| `apps/marketers/migrations/0001_initial.py` | Migration لكل الموديلز |
-| `apps/marketers/management/__init__.py` | |
-| `apps/marketers/management/commands/__init__.py` | جاهز لـ Part A3 |
+---
 
-**الموديلز والعلاقات:**
+### Part A2 — تسجيل الأوردر اليدوي من المسوق + تأكيد/رفض الأدمن
 
-```
-User (1) ←──OneToOne──→ Marketer
-Marketer ←──FK(self)──→ Marketer.team_leader        (القائد الحالي، قابل للتغيير)
-Marketer ←──FK(self)──→ Marketer.credited_team_leader (القائد المُحتسَب، ثابت للأبد)
-Marketer ←──FK──→ MarketerProductPrice ←──FK──→ Product
-Marketer ←──FK──→ MarketerOrder ←──FK──→ Product
-MarketerOrder ──FK──→ Marketer.counted_towards_leader  (يُعبَّأ عند confirm)
-Marketer ←──FK──→ TeamReward ←──FK──→ RewardTier
-Marketer ←──FK──→ TeamLeaderRequest ←──FK──→ TeamLeaderRequestMember ←──FK──→ Marketer
-Marketer ←──FK──→ WithdrawalRequest
-```
+**الملفات المُنشأة/المُحدَّثة:**
 
-**القرارات المُتخذة:**
+| الملف | الحالة | الغرض |
+|-------|--------|-------|
+| `apps/marketers/permissions.py` | جديد | `IsMarketer`, `IsAdminOrStaff` |
+| `apps/marketers/serializers.py` | محدَّث | `MarketerOrderCreateSerializer`, `MarketerOrderSerializer` |
+| `apps/marketers/views.py` | محدَّث | Create/List/Confirm/Reject views + counters logic |
+| `apps/marketers/urls.py` | محدَّث | `me/orders/` |
+| `apps/marketers/dashboard_urls.py` | **جديد** | مسارات الأدمن (راجع قرار #10 فوق) |
+| `apps/marketers/tests.py` | محدَّث | 11 test cases |
 
-1. **MarketerOrder — موديل منفصل (مؤكَّد)**: لا يرث من `Order` العادي. الأسباب: لا Cart، لا دفع، لا shipping، بيانات العميل نص بسيط فقط، لا علاقة بـ invoices.
+**Endpoints المُنفَّذة:**
 
-2. **`counted_towards_leader` حقل على MarketerOrder**: بدل استعلامات معقدة وقت العرض، يُعبَّأ هذا الحقل عند `confirm` مباشرةً بـ:
-   - لو المسوق `team_leader` → يروح لـ `credited_team_leader` بتاعه (لو موجود)
-   - لو المسوق `marketer` عادي → يروح لـ `team_leader` الحالي بتاعه
-   - لو لا هذا ولا ذاك → `null`
-   
-   هذا يبسّط استعلام "مبيعات الفريق" في Part A5 جداً.
+| Method | Path | الوصف | Permission |
+|--------|------|-------|------------|
+| POST | `/api/marketers/me/orders/` | المسوق يسجل أوردر | `IsMarketer` |
+| GET | `/api/dashboard/marketer-orders/` | الأدمن يستعرض (فلتر status/marketer) | `IsAdminOrStaff` |
+| PATCH | `/api/dashboard/marketer-orders/{id}/confirm/` | تأكيد + تحديث العدادات | `IsAdminOrStaff` |
+| PATCH | `/api/dashboard/marketer-orders/{id}/reject/` | رفض (+ rollback لو كان مؤكَّد) | `IsAdminOrStaff` |
 
-3. **`cycle_anchor_date`**: يُضبط تلقائياً = `timezone.localdate()` في `Marketer.save()` عند الإنشاء.
+**منطق العدادات:**
+- `_apply_counters(marketer, profit_amount, sign)` — دالة موحَّدة تُستخدم بـ `sign=+1` عند `confirm` وبـ `sign=-1` عند rollback، لضمان نفس المنطق بالاتجاهين بدون تكرار كود.
+- `rollback_marketer_order_counters(order)` — **idempotent**: لو `order.is_counted == False` من الأساس، ما بتعملش حاجة. تُستخدم في `reject` (تتعامل مع حالتين: رفض pending عادي بدون أي تأثير، أو تراجع عن confirm سابق بعكس كل القيم).
+- `confirm` على أوردر `confirmed` بالفعل → 400 (يمنع تكرار التحصيل بالخطأ).
+- `reject` على أوردر `rejected` بالفعل → 400.
+- كل الـ mutations داخل `transaction.atomic()` + `select_for_update()` على الـ `MarketerOrder` لمنع race conditions لو اتنين أدمن ضغطوا confirm بالتوقيت نفسه.
 
-4. **`referral_code`**: يُولَّد بـ `uuid4().hex[:8].upper()` — فريد ومفيد كـ identifier حتى لو مش بيُستخدم لـ referral tracking.
+**القرارات المُتخذة في هذا الـ Part (تحتاج مراجعتك):**
 
-5. **`TeamReward.unique_together = (marketer, tier, cycle_number)`**: يمنع مكافأة مزدوجة لنفس الـ tier في نفس الدورة.
+1. **فصل `dashboard_urls.py`** عن `urls.py` — راجع قرار #10 فوق في "القرارات التقنية الثابتة".
+2. **Permission classes محلية بدل الاستيراد من `dashboard`** — راجع قرار #11 فوق.
+3. **توضيح `User.role` مقابل `Marketer.role`** — راجع قرار #2 المُحدَّث فوق، يحتاج تأكيدك صريح.
+4. **`counted_towards_leader`** بيُحسب هنا فعليًا لأول مرة (كان مجرد حقل في الموديل من A1): لو `marketer.role == 'team_leader'` ياخد `credited_team_leader`، غير ذلك ياخد `team_leader` الحالي. هذا تطبيق مباشر لقرار A1 رقم 2، ولا يغيّره.
 
-**Patches مطلوبة على المشروع الأصلي:**
-- `apps/users/models.py`: إضافة `('marketer', 'Marketer')` لـ `ROLE_CHOICES`
-- `config/settings.py`: إضافة `'apps.marketers'` لـ `INSTALLED_APPS` + الـ constants الثلاثة
-- `config/urls.py`: إضافة `path('api/marketers/', include('apps.marketers.urls', namespace='marketers'))`
+**اختبارات (`apps/marketers/tests.py`) — 11 حالة:**
+تسجيل ناجح، رفض لعدم وجود سعر، validation الكمية/السعر، منع غير المسوق، تأكيد وتحديث العدادات، منع تأكيد مزدوج، رفض بعد تأكيد (rollback كامل)، رفض pending بدون تأكيد سابق، منع رفض مزدوج، قائمة الأدمن + فلترة status، منع غير الأدمن من الوصول لمسارات الداشبورد.
 
-**أوامر التشغيل (بالترتيب):**
+**أوامر التشغيل:**
 ```bash
-# 1. أضف الـ marketer role في users/models.py أولاً
-python manage.py makemigrations users
-python manage.py migrate users
+python manage.py test apps.marketers
+```
+(لا توجد migrations جديدة في هذا الـ Part — كل التعديلات على طبقة الـ API فقط، الموديلز من A1 لم تتغيّر.)
 
-# 2. ثم الـ marketers app
-python manage.py makemigrations marketers
-python manage.py migrate marketers
+**Patch مطلوب على `config/urls.py`:**
+```python
+path('api/marketers/', include('apps.marketers.urls')),
+path('api/dashboard/', include('apps.marketers.dashboard_urls')),
 ```
 
-**المطلوب في Part A2:**
-- Endpoint: `POST /api/marketers/me/orders/` — المسوق يسجل أوردر
-- Endpoint: `GET /api/dashboard/marketer-orders/` — الأدمن يراجع
-- Endpoint: `PATCH /api/dashboard/marketer-orders/{id}/confirm`
-- Endpoint: `PATCH /api/dashboard/marketer-orders/{id}/reject`
-- منطق تحديث العدادات عند التأكيد + rollback عند الرفض بـ `transaction.atomic`
+**المطلوب في Part A3:**
+- Management command `process_monthly_cycles.py` لتدوير الدورة الشهرية (30 يوم لكل مسوق على حدة) + التصفية الإجبارية لأي رصيد متبقي.
+- التعامل مع حالة فوات أكثر من دورة واحدة (idempotent).
 
 ---
 
@@ -223,3 +223,6 @@ python manage.py migrate marketers
 
 1. **خصم على منتجات محددة** (Part C1): الخصم على الجزء المنطبق فقط من الكارت، وليس الإجمالي الكلي؟
 2. **Celery vs Cron**: هل سيُفعَّل Celery فعلياً على السيرفر أم نكتفي بـ cron job للـ management command؟
+3. **(جديد) `User.role` مقابل `Marketer.role` عند الترقية لـ Leader** — راجع قرار #2 في "القرارات التقنية الثابتة". الافتراض الحالي: `User.role` لا يتغيّر أبدًا، فقط `Marketer.role`.
+4. **(جديد) باترن `dashboard_urls.py`** — هل ده متّسق مع إزاي `apps/orders` و`apps/invoices` بالفعل بيربطوا مسارات `/api/dashboard/`؟ لو فيه باترن تاني فعلي في المشروع، وحّد عليه قبل Part A3 (هيكرر نفس الباترن).
+5. **(جديد) `IsAdminOrStaff` محلية في `apps/marketers`** — لو فيها نسخة موحَّدة قابلة للاستيراد من `apps/dashboard`، استبدلها بدل التكرار.
