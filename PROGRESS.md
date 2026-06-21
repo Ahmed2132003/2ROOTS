@@ -143,7 +143,79 @@ MARKETER_CYCLE_DAYS = 30                 # مدة الدورة الشهرية ب
 
 ## سجل التقدم
 
-*(فاضي — هيتزود بعد كل Part)*
+---
+
+### Part A1 — موديلز نظام المسوقين (النسخة المعدّلة)
+
+**الملفات المُنشأة:**
+
+| الملف | الغرض |
+|-------|-------|
+| `apps/marketers/__init__.py` | |
+| `apps/marketers/apps.py` | `MarketersConfig` |
+| `apps/marketers/models.py` | الـ 8 موديلز الأساسية |
+| `apps/marketers/admin.py` | تسجيل الموديلز في الـ Admin |
+| `apps/marketers/serializers.py` | Serializers أساسية لكل الموديلز |
+| `apps/marketers/views.py` | Placeholder + Permission classes |
+| `apps/marketers/urls.py` | فارغ الآن، يُعبَّأ في A2+ |
+| `apps/marketers/signals.py` | Signal لضمان cycle_anchor_date |
+| `apps/marketers/migrations/0001_initial.py` | Migration لكل الموديلز |
+| `apps/marketers/management/__init__.py` | |
+| `apps/marketers/management/commands/__init__.py` | جاهز لـ Part A3 |
+
+**الموديلز والعلاقات:**
+
+```
+User (1) ←──OneToOne──→ Marketer
+Marketer ←──FK(self)──→ Marketer.team_leader        (القائد الحالي، قابل للتغيير)
+Marketer ←──FK(self)──→ Marketer.credited_team_leader (القائد المُحتسَب، ثابت للأبد)
+Marketer ←──FK──→ MarketerProductPrice ←──FK──→ Product
+Marketer ←──FK──→ MarketerOrder ←──FK──→ Product
+MarketerOrder ──FK──→ Marketer.counted_towards_leader  (يُعبَّأ عند confirm)
+Marketer ←──FK──→ TeamReward ←──FK──→ RewardTier
+Marketer ←──FK──→ TeamLeaderRequest ←──FK──→ TeamLeaderRequestMember ←──FK──→ Marketer
+Marketer ←──FK──→ WithdrawalRequest
+```
+
+**القرارات المُتخذة:**
+
+1. **MarketerOrder — موديل منفصل (مؤكَّد)**: لا يرث من `Order` العادي. الأسباب: لا Cart، لا دفع، لا shipping، بيانات العميل نص بسيط فقط، لا علاقة بـ invoices.
+
+2. **`counted_towards_leader` حقل على MarketerOrder**: بدل استعلامات معقدة وقت العرض، يُعبَّأ هذا الحقل عند `confirm` مباشرةً بـ:
+   - لو المسوق `team_leader` → يروح لـ `credited_team_leader` بتاعه (لو موجود)
+   - لو المسوق `marketer` عادي → يروح لـ `team_leader` الحالي بتاعه
+   - لو لا هذا ولا ذاك → `null`
+   
+   هذا يبسّط استعلام "مبيعات الفريق" في Part A5 جداً.
+
+3. **`cycle_anchor_date`**: يُضبط تلقائياً = `timezone.localdate()` في `Marketer.save()` عند الإنشاء.
+
+4. **`referral_code`**: يُولَّد بـ `uuid4().hex[:8].upper()` — فريد ومفيد كـ identifier حتى لو مش بيُستخدم لـ referral tracking.
+
+5. **`TeamReward.unique_together = (marketer, tier, cycle_number)`**: يمنع مكافأة مزدوجة لنفس الـ tier في نفس الدورة.
+
+**Patches مطلوبة على المشروع الأصلي:**
+- `apps/users/models.py`: إضافة `('marketer', 'Marketer')` لـ `ROLE_CHOICES`
+- `config/settings.py`: إضافة `'apps.marketers'` لـ `INSTALLED_APPS` + الـ constants الثلاثة
+- `config/urls.py`: إضافة `path('api/marketers/', include('apps.marketers.urls', namespace='marketers'))`
+
+**أوامر التشغيل (بالترتيب):**
+```bash
+# 1. أضف الـ marketer role في users/models.py أولاً
+python manage.py makemigrations users
+python manage.py migrate users
+
+# 2. ثم الـ marketers app
+python manage.py makemigrations marketers
+python manage.py migrate marketers
+```
+
+**المطلوب في Part A2:**
+- Endpoint: `POST /api/marketers/me/orders/` — المسوق يسجل أوردر
+- Endpoint: `GET /api/dashboard/marketer-orders/` — الأدمن يراجع
+- Endpoint: `PATCH /api/dashboard/marketer-orders/{id}/confirm`
+- Endpoint: `PATCH /api/dashboard/marketer-orders/{id}/reject`
+- منطق تحديث العدادات عند التأكيد + rollback عند الرفض بـ `transaction.atomic`
 
 ---
 

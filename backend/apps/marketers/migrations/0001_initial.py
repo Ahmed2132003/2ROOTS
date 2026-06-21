@@ -1,0 +1,269 @@
+import django.db.models.deletion
+import django.utils.timezone
+import apps.marketers.models
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        ('products', '0004_product_discount_soldout'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        # ── 1. Marketer ───────────────────────────────────────────────────────
+        migrations.CreateModel(
+            name='Marketer',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('referral_code', models.CharField(
+                    default=apps.marketers.models._generate_referral_code,
+                    max_length=20, unique=True, db_index=True,
+                )),
+                ('status', models.CharField(
+                    choices=[('active', 'Active'), ('suspended', 'Suspended')],
+                    default='active', max_length=20, db_index=True,
+                )),
+                ('role', models.CharField(
+                    choices=[('marketer', 'Marketer'), ('team_leader', 'Team Leader')],
+                    default='marketer', max_length=20, db_index=True,
+                )),
+                ('cycle_anchor_date', models.DateField()),
+                ('current_cycle_number', models.PositiveIntegerField(default=0)),
+                ('monthly_completed_orders_count', models.PositiveIntegerField(default=0)),
+                ('monthly_profit_balance', models.DecimalField(decimal_places=2, default=0, max_digits=12)),
+                ('lifetime_total_orders', models.PositiveIntegerField(default=0)),
+                ('lifetime_total_profit', models.DecimalField(decimal_places=2, default=0, max_digits=14)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('promoted_to_leader_at', models.DateTimeField(blank=True, null=True)),
+                ('user', models.OneToOneField(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='marketer_profile',
+                    to=settings.AUTH_USER_MODEL,
+                )),
+                ('team_leader', models.ForeignKey(
+                    blank=True, null=True,
+                    on_delete=django.db.models.deletion.SET_NULL,
+                    related_name='team_members',
+                    to='marketers.marketer',
+                )),
+                ('credited_team_leader', models.ForeignKey(
+                    blank=True, null=True,
+                    on_delete=django.db.models.deletion.SET_NULL,
+                    related_name='credited_members',
+                    to='marketers.marketer',
+                )),
+            ],
+            options={
+                'verbose_name': 'Marketer',
+                'verbose_name_plural': 'Marketers',
+                'ordering': ['-created_at'],
+            },
+        ),
+
+        # ── 2. MarketerProductPrice ───────────────────────────────────────────
+        migrations.CreateModel(
+            name='MarketerProductPrice',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('assigned_price', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+                ('marketer', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='product_prices',
+                    to='marketers.marketer',
+                )),
+                ('product', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='marketer_prices',
+                    to='products.product',
+                )),
+            ],
+            options={
+                'verbose_name': 'Marketer Product Price',
+                'verbose_name_plural': 'Marketer Product Prices',
+                'unique_together': {('marketer', 'product')},
+            },
+        ),
+
+        # ── 3. MarketerOrder ──────────────────────────────────────────────────
+        migrations.CreateModel(
+            name='MarketerOrder',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('quantity', models.PositiveIntegerField()),
+                ('sale_price_per_unit', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('assigned_price_per_unit', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('profit_amount', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('customer_name', models.CharField(max_length=200)),
+                ('customer_phone', models.CharField(max_length=30)),
+                ('status', models.CharField(
+                    choices=[('pending', 'Pending'), ('confirmed', 'Confirmed'), ('rejected', 'Rejected')],
+                    db_index=True, default='pending', max_length=20,
+                )),
+                ('is_counted', models.BooleanField(default=False)),
+                ('counted_in_cycle_number', models.IntegerField(blank=True, null=True)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('confirmed_at', models.DateTimeField(blank=True, null=True)),
+                ('marketer', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='orders',
+                    to='marketers.marketer',
+                )),
+                ('product', models.ForeignKey(
+                    null=True,
+                    on_delete=django.db.models.deletion.SET_NULL,
+                    related_name='marketer_orders',
+                    to='products.product',
+                )),
+                ('counted_towards_leader', models.ForeignKey(
+                    blank=True, null=True,
+                    on_delete=django.db.models.deletion.SET_NULL,
+                    related_name='team_sales_orders',
+                    to='marketers.marketer',
+                )),
+            ],
+            options={
+                'verbose_name': 'Marketer Order',
+                'verbose_name_plural': 'Marketer Orders',
+                'ordering': ['-created_at'],
+            },
+        ),
+
+        # ── 4. RewardTier ─────────────────────────────────────────────────────
+        migrations.CreateModel(
+            name='RewardTier',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('min_team_sales', models.PositiveIntegerField()),
+                ('reward_amount', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('is_active', models.BooleanField(default=True)),
+            ],
+            options={
+                'verbose_name': 'Reward Tier',
+                'verbose_name_plural': 'Reward Tiers',
+                'ordering': ['min_team_sales'],
+            },
+        ),
+
+        # ── 5. TeamReward ─────────────────────────────────────────────────────
+        migrations.CreateModel(
+            name='TeamReward',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('cycle_number', models.PositiveIntegerField()),
+                ('team_sales_count_at_award', models.PositiveIntegerField()),
+                ('reward_amount', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('status', models.CharField(
+                    choices=[('pending', 'Pending'), ('approved', 'Approved'), ('paid', 'Paid')],
+                    default='pending', max_length=20,
+                )),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('marketer', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='team_rewards',
+                    to='marketers.marketer',
+                )),
+                ('tier', models.ForeignKey(
+                    null=True,
+                    on_delete=django.db.models.deletion.SET_NULL,
+                    related_name='team_rewards',
+                    to='marketers.rewardtier',
+                )),
+            ],
+            options={
+                'verbose_name': 'Team Reward',
+                'verbose_name_plural': 'Team Rewards',
+                'ordering': ['-created_at'],
+                'unique_together': {('marketer', 'tier', 'cycle_number')},
+            },
+        ),
+
+        # ── 6. TeamLeaderRequest ──────────────────────────────────────────────
+        migrations.CreateModel(
+            name='TeamLeaderRequest',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('status', models.CharField(
+                    choices=[
+                        ('awaiting_response', 'Awaiting Response'),
+                        ('accepted_pending_requirement', 'Accepted – Pending Requirement'),
+                        ('completed', 'Completed'),
+                        ('declined', 'Declined'),
+                        ('cancelled', 'Cancelled'),
+                    ],
+                    default='awaiting_response', max_length=40,
+                )),
+                ('triggered_at', models.DateTimeField(default=django.utils.timezone.now)),
+                ('responded_at', models.DateTimeField(blank=True, null=True)),
+                ('marketer', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='leader_requests',
+                    to='marketers.marketer',
+                )),
+            ],
+            options={
+                'verbose_name': 'Team Leader Request',
+                'verbose_name_plural': 'Team Leader Requests',
+                'ordering': ['-triggered_at'],
+            },
+        ),
+
+        # ── 7. TeamLeaderRequestMember ────────────────────────────────────────
+        migrations.CreateModel(
+            name='TeamLeaderRequestMember',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('request', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='members',
+                    to='marketers.teamleaderrequest',
+                )),
+                ('marketer', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='leader_request_nominations',
+                    to='marketers.marketer',
+                )),
+            ],
+            options={
+                'verbose_name': 'Team Leader Request Member',
+                'verbose_name_plural': 'Team Leader Request Members',
+                'unique_together': {('request', 'marketer')},
+            },
+        ),
+
+        # ── 8. WithdrawalRequest ──────────────────────────────────────────────
+        migrations.CreateModel(
+            name='WithdrawalRequest',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('amount', models.DecimalField(decimal_places=2, max_digits=10)),
+                ('status', models.CharField(
+                    choices=[
+                        ('pending', 'Pending'),
+                        ('approved', 'Approved'),
+                        ('paid', 'Paid'),
+                        ('rejected', 'Rejected'),
+                    ],
+                    default='pending', max_length=20,
+                )),
+                ('cycle_number', models.PositiveIntegerField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('resolved_at', models.DateTimeField(blank=True, null=True)),
+                ('marketer', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='withdrawal_requests',
+                    to='marketers.marketer',
+                )),
+            ],
+            options={
+                'verbose_name': 'Withdrawal Request',
+                'verbose_name_plural': 'Withdrawal Requests',
+                'ordering': ['-created_at'],
+            },
+        ),
+    ]

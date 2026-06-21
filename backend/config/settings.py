@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'apps.cart',
     'apps.invoices',
     'apps.dashboard',
+    'apps.marketers',
+
 ]
 
 MIDDLEWARE = [
@@ -152,3 +154,18 @@ ORDER_TRACKING_BASE_URL = config('ORDER_TRACKING_BASE_URL', default='https://you
 
 # Admin email — receives a notification on every new order
 ADMIN_ORDER_EMAIL = config('ADMIN_ORDER_EMAIL', default='2roots2store@gmail.com')
+
+# ─── Marketer System Constants ────────────────────────────────────────────────
+MARKETER_MONTHLY_TARGET_ORDERS = 10   # عدد الأوردرات المطلوب لطرح سؤال الترقية
+MARKETER_MIN_TEAM_MEMBERS = 10        # الحد الأدنى للمسوقين المطلوبين عند الترقية
+MARKETER_CYCLE_DAYS = 30              # مدة الدورة الشهرية بالأيام
+ 
+
+
+
+
+
+
+
+
+
