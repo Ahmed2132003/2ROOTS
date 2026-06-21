@@ -1,49 +1,33 @@
 """
 apps/marketers/views.py
 
-الـ views الكاملة هتتكتب في Parts التالية:
-- Part A2: تسجيل الأوردر + تأكيد الأدمن
+- Part A2: تسجيل الأوردر + تأكيد/رفض الأدمن  ✅ (هذا الملف)
 - Part A4: طلب الترقية
 - Part A6: سحب الأرباح
 - Part A7: API إدارة الداشبورد
 - Part A8: API المسوق الشخصي
 """
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions
-
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import generics
+
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .models import Marketer, MarketerOrder
 from .permissions import IsAdminOrStaff, IsMarketer
 from .serializers import MarketerOrderCreateSerializer, MarketerOrderSerializer
 
-class IsAdminOrStaff(permissions.BasePermission):
-    """نفس permission pattern المستخدم في apps/dashboard/views.py"""
-    def has_permission(self, request, view):
-        return (
-            request.user.is_authenticated
-            and request.user.role in ['admin', 'staff']
-        )
 
-
-class IsMarketer(permissions.BasePermission):
-    """صلاحية للمسوق المصادق عليه (active فقط)"""
-    def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return False
-        if request.user.role != 'marketer':
-            return False
-        try:
-            return request.user.marketer_profile.status == 'active'
-        except Exception:
-            return False
-
+# ملاحظة (تصحيح بعد دمج A1+A2): كان فيه تعريف مكرر لـ IsAdminOrStaff/IsMarketer هنا
+# محليًا فوق النسخة المستوردة من .permissions، وكانت نسخة IsMarketer المحلية بترفض
+# team_leader من تسجيل أوردر شخصي (request.user.role != 'marketer') وده يتعارض مع
+# Part A4/A10 (القائد لازم يقدر يسجل أوردرات شخصية كمان). تم حذف التكرار والاعتماد
+# على النسخة الموحّدة في permissions.py فقط.
 
 class IsMarketerOrTeamLeader(permissions.BasePermission):
-    """صلاحية لأي مسوق (marketer أو team_leader) — active فقط"""
+    """صلاحية لأي مسوق (marketer أو team_leader) — active فقط. تُستخدم في Parts قادمة."""
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
             return False
@@ -61,7 +45,6 @@ class PlaceholderView(APIView):
 
     def get(self, request):
         return Response({"detail": "هيتنفذ في Parts التالية."})
-
 
 
 # ═════════════════════════════════════════════════════════════════════════════

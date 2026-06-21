@@ -241,8 +241,12 @@ class MarketerOrderFlowTests(TestCase):
         self._auth_as(self.admin_user)
         resp = self.client.get('/api/dashboard/marketer-orders/?status=pending')
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(resp.data), 1)
-        self.assertEqual(resp.data[0]['customer_name'], 'X')
+
+        # المشروع شغّال بـ pagination على مستوى الـ DRF settings، فالـ response بيكون
+        # dict فيه count/next/previous/results مش list مباشرة.
+        results = resp.data['results'] if isinstance(resp.data, dict) else resp.data
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['customer_name'], 'X')
 
     def test_non_admin_cannot_access_dashboard_endpoints(self):
         self._auth_as(self.marketer_user)
