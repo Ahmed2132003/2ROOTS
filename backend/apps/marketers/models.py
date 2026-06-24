@@ -378,6 +378,10 @@ class WithdrawalRequest(models.Model):
     )
     # رقم الدورة اللي طلب السحب فيها
     cycle_number = models.PositiveIntegerField()
+    # True لو الصف ده اتعمل تلقائياً من process_monthly_cycles (تصفية إجبارية
+    # آخر الدورة)، False لو طلب سحب حقيقي قدّمه المسوق بنفسه. أُضيف في Part A3
+    # — راجع PROGRESS.md قرار #12 لسبب القرار.
+    is_forced_settlement = models.BooleanField(default=False)
 
     created_at   = models.DateTimeField(auto_now_add=True)
     resolved_at  = models.DateTimeField(null=True, blank=True)

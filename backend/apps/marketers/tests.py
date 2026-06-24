@@ -1,12 +1,17 @@
+from datetime import timedelta
 from decimal import Decimal
+from io import StringIO
 
+from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.products.models import Category, Product
-from apps.marketers.models import Marketer, MarketerOrder, MarketerProductPrice
+from apps.marketers.models import (
+    Marketer, MarketerOrder, MarketerProductPrice, WithdrawalRequest,
+)
 from apps.users.models import User
 
 
@@ -252,3 +257,136 @@ class MarketerOrderFlowTests(TestCase):
         self._auth_as(self.marketer_user)
         resp = self.client.get('/api/dashboard/marketer-orders/')
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ProcessMonthlyCyclesCommandTests(TestCase):
+    """
+    Part A3 — تغطي management command `process_monthly_cycles`:
+    - دورة لسه ماخلصتش → مفيش تغيير
+    - دورة خلصت بدون رصيد → تصفير بدون تصفية
+    - دورة خلصت برصيد → تصفية إجبارية (WithdrawalRequest بـ is_forced_settlement=True)
+    - فوات أكتر من دورة واحدة → current_cycle_number بيتقدّم صح، تصفية واحدة بس
+      (لأن الرصيد اتصفّر من أول دورة قافلة)
+    - تشغيل الكوماند مرتين → idempotent
+    - --dry-run → صفر تغييرات محفوظة
+
+    Backdating note: `Marketer.save()` بيحدد `cycle_anchor_date` تلقائيًا بس لو
+    القيمة فاضية وقت أول save. تمرير `cycle_anchor_date` بتاريخ ماضي مباشرة في
+    `.create()` كافي لمحاكاة حساب قديم — مفيش حاجة لـ mock للوقت.
+    """
+
+    def _make_marketer(self, username, days_ago=0):
+        user = User.objects.create_user(
+            username=username,
+            email=f'{username}@test.com',
+            password='pass12345',
+            role='marketer',
+        )
+        anchor = timezone.localdate() - timedelta(days=days_ago)
+        return Marketer.objects.create(user=user, cycle_anchor_date=anchor)
+
+    def test_cycle_not_yet_elapsed_no_change(self):
+        marketer = self._make_marketer('cyc1', days_ago=10)  # only 10 of 30 days
+        marketer.monthly_profit_balance = Decimal('250.00')
+        marketer.monthly_completed_orders_count = 3
+        marketer.save()
+
+        call_command('process_monthly_cycles', stdout=StringIO())
+        marketer.refresh_from_db()
+
+        self.assertEqual(marketer.current_cycle_number, 0)
+        self.assertEqual(marketer.monthly_profit_balance, Decimal('250.00'))
+        self.assertEqual(marketer.monthly_completed_orders_count, 3)
+        self.assertEqual(
+            WithdrawalRequest.objects.filter(marketer=marketer).count(), 0
+        )
+
+    def test_cycle_elapsed_no_balance_resets_without_settlement(self):
+        marketer = self._make_marketer('cyc2', days_ago=31)
+        marketer.monthly_completed_orders_count = 7
+        marketer.monthly_profit_balance = Decimal('0.00')
+        marketer.save()
+
+        call_command('process_monthly_cycles', stdout=StringIO())
+        marketer.refresh_from_db()
+
+        self.assertEqual(marketer.current_cycle_number, 1)
+        self.assertEqual(marketer.monthly_completed_orders_count, 0)
+        self.assertEqual(marketer.monthly_profit_balance, Decimal('0.00'))
+        self.assertEqual(
+            WithdrawalRequest.objects.filter(marketer=marketer).count(), 0
+        )
+
+    def test_cycle_elapsed_with_balance_forces_settlement(self):
+        marketer = self._make_marketer('cyc3', days_ago=31)
+        marketer.monthly_completed_orders_count = 12
+        marketer.monthly_profit_balance = Decimal('1500.50')
+        marketer.lifetime_total_profit = Decimal('9000.00')
+        marketer.lifetime_total_orders = 50
+        marketer.save()
+
+        call_command('process_monthly_cycles', stdout=StringIO())
+        marketer.refresh_from_db()
+
+        self.assertEqual(marketer.current_cycle_number, 1)
+        self.assertEqual(marketer.monthly_completed_orders_count, 0)
+        self.assertEqual(marketer.monthly_profit_balance, Decimal('0.00'))
+        # lifetime numbers must never be touched by a cycle reset
+        self.assertEqual(marketer.lifetime_total_profit, Decimal('9000.00'))
+        self.assertEqual(marketer.lifetime_total_orders, 50)
+
+        settlement = WithdrawalRequest.objects.get(marketer=marketer)
+        self.assertTrue(settlement.is_forced_settlement)
+        self.assertEqual(settlement.amount, Decimal('1500.50'))
+        self.assertEqual(settlement.status, 'paid')
+        self.assertEqual(settlement.cycle_number, 0)  # the cycle that just closed
+        self.assertIsNotNone(settlement.resolved_at)
+
+    def test_multiple_missed_cycles_advance_correctly(self):
+        # 95 days elapsed = 3 full 30-day cycles passed (90 days), 4th not due yet
+        marketer = self._make_marketer('cyc4', days_ago=95)
+        marketer.monthly_profit_balance = Decimal('100.00')
+        marketer.save()
+
+        call_command('process_monthly_cycles', stdout=StringIO())
+        marketer.refresh_from_db()
+
+        self.assertEqual(marketer.current_cycle_number, 3)
+        self.assertEqual(marketer.monthly_profit_balance, Decimal('0.00'))
+        # only the first of the 3 closed cycles had a balance to settle —
+        # cycles 2 and 3 closed with a balance of 0 since cycle 1 already
+        # zeroed it out
+        self.assertEqual(
+            WithdrawalRequest.objects.filter(marketer=marketer).count(), 1
+        )
+        settlement = WithdrawalRequest.objects.get(marketer=marketer)
+        self.assertEqual(settlement.amount, Decimal('100.00'))
+        self.assertEqual(settlement.cycle_number, 0)
+
+    def test_command_is_idempotent_on_rerun(self):
+        marketer = self._make_marketer('cyc5', days_ago=31)
+        marketer.monthly_profit_balance = Decimal('300.00')
+        marketer.save()
+
+        call_command('process_monthly_cycles', stdout=StringIO())
+        call_command('process_monthly_cycles', stdout=StringIO())  # rerun, same day
+        marketer.refresh_from_db()
+
+        self.assertEqual(marketer.current_cycle_number, 1)  # not 2
+        self.assertEqual(
+            WithdrawalRequest.objects.filter(marketer=marketer).count(), 1
+        )
+
+    def test_dry_run_does_not_persist_changes(self):
+        marketer = self._make_marketer('cyc6', days_ago=31)
+        marketer.monthly_profit_balance = Decimal('400.00')
+        marketer.save()
+
+        call_command('process_monthly_cycles', '--dry-run', stdout=StringIO())
+        marketer.refresh_from_db()
+
+        self.assertEqual(marketer.current_cycle_number, 0)
+        self.assertEqual(marketer.monthly_profit_balance, Decimal('400.00'))
+        self.assertEqual(
+            WithdrawalRequest.objects.filter(marketer=marketer).count(), 0
+        )

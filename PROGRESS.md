@@ -31,7 +31,7 @@
 
 **كيف السعر بيتحسب حالياً**: `CartItem.subtotal = variant.effective_price × quantity`. الـ `effective_price` على `ProductVariant` بيطبق خصم المنتج على `price_override` أو `base_price`. **لا يوجد wholesale tiering حالياً**.
 
-ملاحظة مهمة لـ Part A2: نظام المسوقين (`MarketerOrder`, `MarketerProductPrice`) بيربط مباشرة بـ `apps.products.Product` (المنتج الأساسي)، **مش** بـ `ProductVariant` — لأن خطة النظام (A System) ما ذكرتش variants، والتسعير للمسوق على مستوى المنتج ككل. هذا قرار موروث من Part A1 ولم يتغيّر في A2.
+ملاحظة مهمة لـ Part A2: نظام المسوقين (`MarketerOrder`, `MarketerProductPrice`) بيربط مباشرة بـ `apps.products.Product` (المنتج الأساسي)، **مش** بـ `ProductVariant`.
 
 ---
 
@@ -62,17 +62,16 @@
 ### Dashboard (`apps/dashboard`)
 
 - **Backend**: 3 views فقط (Stats، SalesChart، TopProducts). كلهم بـ `IsAdminOrStaff` permission.
-- **Frontend**: صفحة واحدة `pages/admin/Dashboard.jsx` تعرض Stats + إدارة Categories + Products. الـ navigation عبر Quick Links في الأعلى + Routes في `App.jsx`.
+- **Frontend**: صفحة واحدة `pages/admin/Dashboard.jsx` تعرض Stats + إدارة Categories + Products.
 - **Pattern الجديدة يتبعه**: كل section جديد في الداشبورد = صفحة منفصلة في `pages/[domain]/`، Route في `App.jsx` تحت `<PrivateRoute roles={['admin', 'staff']}>`.
 
 ---
 
 ### Infrastructure
 
-- **Celery**: مُعرَّف في settings (CELERY_BROKER_URL = Redis) لكن **لا يوجد `celery.py` app** في المشروع حالياً (جاهز للتفعيل). **القرار**: نستخدم Django management commands أولاً (كـ Part A3)، ونوضح كيفية الجدولة عبر cron.
+- **Celery**: مُعرَّف في settings (`CELERY_BROKER_URL`/`CELERY_RESULT_BACKEND` = Redis) لكن **لا يوجد `celery.py` app** في المشروع حالياً. **القرار**: نستخدم Django management commands أولاً (Part A3)، ونوضح طريقة الجدولة عبر cron.
 - **Database**: PostgreSQL.
-- **Timezone**: Africa/Cairo.
-- **No Celery app yet**: سنُنشئ `backend/config/celery.py` لو احتجنا في مرحلة لاحقة.
+- **Timezone**: `Africa/Cairo`, `USE_TZ = True`.
 
 ---
 
@@ -88,22 +87,13 @@
 
 ### 2. Role "marketer" في User
 
-تمت إضافة `('marketer', 'Marketer')` لـ `ROLE_CHOICES` في `apps/users/models.py` (منفذ في A1).
-الـ `Marketer` model في `apps/marketers` OneToOne مع `User` حيث `user.role == 'marketer'`.
+`Marketer` model في `apps/marketers` OneToOne مع `User` حيث `user.role == 'marketer'`. `User.role` ثابت طول الوقت؛ `Marketer.role` هو اللي يتغيّر بين `'marketer'` و `'team_leader'`.
 
-> **ملاحظة توضيح دقيقة (تُوثَّق هنا الآن، Part A2):**
-> `User.role` يبقى `'marketer'` ثابت طول الوقت (مجرد تصنيف عام على مستوى الحساب).
-> `Marketer.role` هو اللي يتغيّر بين `'marketer'` و `'team_leader'` (الحالة التفصيلية داخل نظام المسوقين فقط).
-> الـ Permission class `IsMarketer` في `apps/marketers/permissions.py` بتفحص `User.role in ('marketer', 'team_leader')` تحسبًا، لكن عمليًا `User.role` يفضل `'marketer'` دائمًا حسب التصميم الحالي.
-> **قرار يحتاج تأكيدك:** هل `User.role` نفسه يجب أن يتغير لـ `'team_leader'` عند الترقية، أم يكفي تغيير `Marketer.role` فقط (وهو الافتراض المعتمد الآن: لا نغيّر `User.role` أبدًا بعد الإنشاء)؟
+> **قرار يحتاج تأكيدك:** هل `User.role` نفسه يجب أن يتغير لـ `'team_leader'` عند الترقية، أم يكفي تغيير `Marketer.role` فقط (الافتراض الحالي: `User.role` لا يتغيّر أبدًا)؟
 
 ### 3. MarketerOrder — موديل منفصل (قرار ثابت)
 
-`MarketerOrder` موديل منفصل تماماً عن `Order` العادي لأن:
-- مفيش Cart، مفيش دفع أونلاين، مفيش shipping address بالتفصيل
-- المسوق هو اللي بيدخل بيانات العميل والسعر يدوياً
-- لا علاقة له بـ `apps/invoices` أو `apps/cart`
-- الـ snapshot المطلوب مختلف جوهرياً
+`MarketerOrder` موديل منفصل تماماً عن `Order` العادي (مفيش Cart، مفيش دفع أونلاين، المسوق بيدخل بيانات العميل والسعر يدوياً، لا علاقة بـ invoices/cart).
 
 ### 4. ترتيب حساب السعر النهائي للأوردر (B + C)
 
@@ -113,7 +103,7 @@
 
 ### 5. MarketerOrder والخصم (A + C)
 
-نظام المسوقين **مستقل تماماً** عن Cart/Order العادي. الـ `MarketerOrder` لا يستخدم discount codes.
+نظام المسوقين **مستقل تماماً** عن Cart/Order العادي. `MarketerOrder` لا يستخدم discount codes.
 
 ### 6. طلب سحب الأرباح (Part A6)
 
@@ -136,19 +126,21 @@ MARKETER_CYCLE_DAYS = 30
 - **Backend**: snake_case للـ models والـ fields، PascalCase للـ classes
 - **Frontend**: PascalCase للـ components، camelCase للـ functions
 - **APIs**: `/api/marketers/...` للمسوق، `/api/dashboard/...` للأدمن
-- **Files**: نفس pattern الموجود: `apps/[domain]/models.py`, `views.py`, `serializers.py`, `urls.py`, `signals.py`, `admin.py`
 
-### 10. (جديد — Part A2) فصل urls.py عن dashboard_urls.py
+### 10. فصل urls.py عن dashboard_urls.py (Part A2)
 
-لأن مسارات الأدمن (`/api/dashboard/marketer-orders/...`) **لا** تقع تحت `/api/dashboard/marketers/...` (الخطة الأصلية كتبت `marketer-orders` مباشرة تحت `/api/dashboard/`، مش متداخلة)، تم فصلهم لملفين:
-- `apps/marketers/urls.py` → يُضمَّن تحت `path('api/marketers/', include(...))`
-- `apps/marketers/dashboard_urls.py` → يُضمَّن تحت `path('api/dashboard/', include(...))`
+- `apps/marketers/urls.py` → تحت `path('api/marketers/', include(...))`
+- `apps/marketers/dashboard_urls.py` → تحت `path('api/dashboard/', include(...))`
 
-**قرار يحتاج تأكيد**: لو فيه باترن مختلف بالفعل في `apps/orders` أو `apps/invoices` لربط مسارات `/api/dashboard/`، وحّد عليه بدل هذا الفصل (راجع كيف بيضيف `apps/invoices/urls.py` مساراته تحت dashboard فعليًا قبل أي Part جاي يعتمد على نفس الباترن).
+**قرار يحتاج تأكيد**: وحّد مع باترن `apps/orders`/`apps/invoices` لو فيه فرق فعلي.
 
-### 11. (جديد — Part A2) Permission classes محلية
+### 11. Permission classes محلية (Part A2)
 
-تم إنشاء `apps/marketers/permissions.py` بنسخة محلية من `IsAdminOrStaff` (نفس منطق `dashboard/views.py`) + `IsMarketer` جديدة. لم نستورد من `dashboard/views.py` مباشرة تجنبًا لـ circular imports محتملة ولعدم التأكد من شكل التصدير الفعلي هناك. **قرار يحتاج تأكيد**: لو `IsAdminOrStaff` مُصدَّرة بشكل صريح وقابلة لإعادة الاستخدام من `apps.dashboard.permissions` (أو مكان مشابه)، الأفضل نوحّد عليها بدل التكرار — عدّلها في أي Part جاي لو أكدت.
+`apps/marketers/permissions.py` بنسخة محلية من `IsAdminOrStaff` بدل الاستيراد من `dashboard`. **قرار يحتاج تأكيد**: وحّد لو فيه نسخة موحَّدة قابلة لإعادة الاستخدام.
+
+### 12. (جديد — Part A3) التصفية الإجبارية الشهرية: حقل `is_forced_settlement` على `WithdrawalRequest`
+
+القرار المعلّق في الخطة الأصلية ("موديل ForcedSettlement منفصل وللا نفس WithdrawalRequest") اتحسم لصالح **نفس `WithdrawalRequest`** + حقل جديد `is_forced_settlement` (Boolean, default=False). السبب: سجل واحد موحَّد لكل "الفلوس اللي خرجت من الرصيد الشهري" أسهل في التقارير لاحقًا (مجموع كل `WithdrawalRequest` بحالة `paid` = إجمالي المدفوع، سواء كان طلب من المسوق نفسه أو تصفية تلقائية)، والـ flag كافي للتفريق بينهم في الداشبورد. **هذا قرار اتخذته في A3، مش جزء من الخطة الأصلية المكتوبة، ومحتاج تأكيدك الصريح قبل البدء في Part A4** — يتطلب تعديل يدوي بسيط على `models.py` + migration (راجع `MODELS_PATCH_NOTE.md` وتقرير A3 تحت).
 
 ---
 
@@ -156,26 +148,19 @@ MARKETER_CYCLE_DAYS = 30
 
 ---
 
-### Part A1 — موديلز نظام المسوقين (النسخة المعدّلة)
+### Part A1 — موديلز نظام المسوقين
 
-*(دون تغيير — راجع النسخة السابقة لتفاصيل الموديلز والعلاقات والقرارات. بالملخص: 8 موديلز أساسية، `MarketerOrder` منفصل عن `Order`، حقل `counted_towards_leader` يُعبَّأ وقت `confirm`، `referral_code` بـ uuid4، `cycle_anchor_date` تلقائي وقت الإنشاء.)*
+8 موديلز: `Marketer`, `MarketerProductPrice`, `MarketerOrder`, `RewardTier`, `TeamReward`, `TeamLeaderRequest`, `TeamLeaderRequestMember`, `WithdrawalRequest`. نقاط مهمة من الكود الفعلي:
+- `Marketer.cycle_anchor_date` هو **`DateField`** (مش DateTimeField)، بيتحدد تلقائيًا في `save()` لـ `timezone.localdate()` بس لو مفيش قيمة متبعتة وقت الإنشاء.
+- `Marketer` فيها methods جاهزة: `get_cycle_start(cycle_number=None)` و `get_cycle_end(cycle_number=None)` بترجع `date` (مش datetime) بتاع بداية/نهاية أي دورة، بناءً على `MARKETER_CYCLE_DAYS` من settings. **أي كود جديد يحسب حدود الدورة لازم يستخدم الـ methods دي بدل ما يعيد كتابة المنطق.**
+- `MarketerOrder.counted_towards_leader`: FK لـ Marketer، بيتعبى وقت `confirm` (راجع Part A2).
+- `referral_code` بـ uuid4 hex[:8].upper().
 
 ---
 
 ### Part A2 — تسجيل الأوردر اليدوي من المسوق + تأكيد/رفض الأدمن
 
-**الملفات المُنشأة/المُحدَّثة:**
-
-| الملف | الحالة | الغرض |
-|-------|--------|-------|
-| `apps/marketers/permissions.py` | جديد | `IsMarketer`, `IsAdminOrStaff` |
-| `apps/marketers/serializers.py` | محدَّث | `MarketerOrderCreateSerializer`, `MarketerOrderSerializer` |
-| `apps/marketers/views.py` | محدَّث | Create/List/Confirm/Reject views + counters logic |
-| `apps/marketers/urls.py` | محدَّث | `me/orders/` |
-| `apps/marketers/dashboard_urls.py` | **جديد** | مسارات الأدمن (راجع قرار #10 فوق) |
-| `apps/marketers/tests.py` | محدَّث | 11 test cases |
-
-**Endpoints المُنفَّذة:**
+**Endpoints:**
 
 | Method | Path | الوصف | Permission |
 |--------|------|-------|------------|
@@ -184,45 +169,67 @@ MARKETER_CYCLE_DAYS = 30
 | PATCH | `/api/dashboard/marketer-orders/{id}/confirm/` | تأكيد + تحديث العدادات | `IsAdminOrStaff` |
 | PATCH | `/api/dashboard/marketer-orders/{id}/reject/` | رفض (+ rollback لو كان مؤكَّد) | `IsAdminOrStaff` |
 
-**منطق العدادات:**
-- `_apply_counters(marketer, profit_amount, sign)` — دالة موحَّدة تُستخدم بـ `sign=+1` عند `confirm` وبـ `sign=-1` عند rollback، لضمان نفس المنطق بالاتجاهين بدون تكرار كود.
-- `rollback_marketer_order_counters(order)` — **idempotent**: لو `order.is_counted == False` من الأساس، ما بتعملش حاجة. تُستخدم في `reject` (تتعامل مع حالتين: رفض pending عادي بدون أي تأثير، أو تراجع عن confirm سابق بعكس كل القيم).
-- `confirm` على أوردر `confirmed` بالفعل → 400 (يمنع تكرار التحصيل بالخطأ).
-- `reject` على أوردر `rejected` بالفعل → 400.
-- كل الـ mutations داخل `transaction.atomic()` + `select_for_update()` على الـ `MarketerOrder` لمنع race conditions لو اتنين أدمن ضغطوا confirm بالتوقيت نفسه.
+**منطق العدادات:** `_apply_counters(marketer, profit_amount, sign)` موحَّدة لـ confirm (+1) ولـ rollback (-1). `confirm`/`reject` على أوردر في نفس الحالة بالفعل → 400. كل الـ mutations جوه `transaction.atomic()` + `select_for_update()`.
 
-**القرارات المُتخذة في هذا الـ Part (تحتاج مراجعتك):**
+**اختبارات (`tests.py`, class `MarketerOrderFlowTests`) — 11 حالة.**
 
-1. **فصل `dashboard_urls.py`** عن `urls.py` — راجع قرار #10 فوق في "القرارات التقنية الثابتة".
-2. **Permission classes محلية بدل الاستيراد من `dashboard`** — راجع قرار #11 فوق.
-3. **توضيح `User.role` مقابل `Marketer.role`** — راجع قرار #2 المُحدَّث فوق، يحتاج تأكيدك صريح.
-4. **`counted_towards_leader`** بيُحسب هنا فعليًا لأول مرة (كان مجرد حقل في الموديل من A1): لو `marketer.role == 'team_leader'` ياخد `credited_team_leader`، غير ذلك ياخد `team_leader` الحالي. هذا تطبيق مباشر لقرار A1 رقم 2، ولا يغيّره.
+---
 
-**اختبارات (`apps/marketers/tests.py`) — 11 حالة:**
-تسجيل ناجح، رفض لعدم وجود سعر، validation الكمية/السعر، منع غير المسوق، تأكيد وتحديث العدادات، منع تأكيد مزدوج، رفض بعد تأكيد (rollback كامل)، رفض pending بدون تأكيد سابق، منع رفض مزدوج، قائمة الأدمن + فلترة status، منع غير الأدمن من الوصول لمسارات الداشبورد.
+### Part A3 — الدورة الشهرية (30 يوم لكل حساب) + التصفية الإجبارية
 
-**أوامر التشغيل:**
-```bash
-python manage.py test apps.marketers
+**الملفات:**
+
+| الملف | الحالة | الغرض |
+|---|---|---|
+| `apps/marketers/models.py` | **تعديل مطلوب منك** (patch جاهز في `MODELS_PATCH_NOTE.md`) | إضافة `is_forced_settlement` لـ `WithdrawalRequest` |
+| `apps/marketers/management/__init__.py` | جديد (فاضي) | تفعيل management commands للـ app |
+| `apps/marketers/management/commands/__init__.py` | جديد (فاضي) | — |
+| `apps/marketers/management/commands/process_monthly_cycles.py` | جديد | الكوماند الرئيسي |
+| `apps/marketers/tests.py` | إضافة class `ProcessMonthlyCyclesCommandTests` (6 حالات) | تغطية الكوماند |
+
+**القرار اللي كان معلّق (⚠️) واتحسم هنا — راجع قرار #12 فوق.**
+
+**منطق الكوماند:**
+- بيستخدم `marketer.get_cycle_end()` الموجودة بالفعل على الموديل من A1 (مش بيعيد حساب التاريخ) — مقارنة `timezone.localdate()` (date) ضد `get_cycle_end()` (date)، مش `timezone.now()`، لأن `cycle_anchor_date` نفسه `DateField`.
+- لكل `Marketer`: `transaction.atomic()` + `select_for_update()` منفصلة (مش transaction واحدة للباتش كله) — قفل صف واحد ميعطلش الباقي، وفشل مسوق واحد ميرجعش تغييرات غيره.
+- `while today >= marketer.get_cycle_end():` بدل `if` — يتعامل صح مع فوات أكتر من دورة واحدة، بيقفل كل دورة على حدة بالترتيب.
+- **Idempotency طبيعية بدون أي flag إضافي**: الشرط بيعتمد على `current_cycle_number` نفسه (جزء من الداتا)، فتشغيل الكوماند أي عدد مرات بعد ما الدورة اتقفلت، الشرط بيبقى False من المرة التانية.
+- لكل دورة بتتقفل: لو `monthly_profit_balance > 0` → `WithdrawalRequest` جديد بـ `status="paid"`, `is_forced_settlement=True`, `cycle_number` = رقم الدورة اللي اتقفلت (قبل الزيادة), `resolved_at=timezone.now()`. بعدين تصفير `monthly_profit_balance` و `monthly_completed_orders_count`، وزيادة `current_cycle_number`.
+- `lifetime_total_orders` و `lifetime_total_profit` **متتلمسش خالص**.
+- `--dry-run` (إضافة عملية مش في الخطة الأصلية، مفيدة لتجربة الكوماند على بيانات حقيقية قبل ما تثق فيه) — بيطبع اللي هيحصل من غير حفظ.
+- ملخص آخر التشغيلة في stdout (عدد المسوقين المتأثرين، عدد الدورات المُقفلة، عدد التصفيات وقيمتها) — مفيد للمونيتورينج لو السطر بيتسجل في log من cron.
+
+**الاختبارات (`ProcessMonthlyCyclesCommandTests`, 6 حالات):**
+1. دورة لسه ماخلصتش (10 من 30 يوم) → مفيش تغيير.
+2. دورة خلصت بدون رصيد → تصفير + زيادة `current_cycle_number` بدون `WithdrawalRequest`.
+3. دورة خلصت برصيد → `WithdrawalRequest` بـ `is_forced_settlement=True`, `status="paid"`, القيمة والـ `cycle_number` صحيحين، الأرقام التراكمية ثابتة.
+4. فوات 3 دورات (95 يوم) برصيد في الأول بس → `current_cycle_number` يزيد بـ3، تصفية واحدة بس.
+5. تشغيل الكوماند مرتين على نفس المسوق → نفس نتيجة المرة الواحدة بالظبط.
+6. `--dry-run` → صفر تغييرات محفوظة.
+
+**Backdating في الاختبارات**: بما إن `Marketer.save()` بيحدد `cycle_anchor_date` تلقائيًا بس لو القيمة فاضية وقت الإنشاء، تمرير `cycle_anchor_date` بتاريخ ماضي مباشرة في `.create()` كافي لمحاكاة حساب قديم — مفيش حاجة لـ mock للوقت.
+
+**طريقة الجدولة المتوقعة على السيرفر:**
+بما إن Celery مش مفعّل فعليًا لسه، الكوماند مصمم يتشغّل **يوميًا** عبر cron خارجي:
+```cron
+0 3 * * * cd /path/to/2ROOTS/backend && /path/to/venv/bin/python manage.py process_monthly_cycles >> /var/log/2roots/monthly_cycles.log 2>&1
 ```
-(لا توجد migrations جديدة في هذا الـ Part — كل التعديلات على طبقة الـ API فقط، الموديلز من A1 لم تتغيّر.)
+يومي (مش شهري) لازم تحديدًا لأن كل مسوق له `cycle_anchor_date` مختلف (تاريخ تسجيله هو، مش أول الشهر الميلادي)، فلازم نفحص كل يوم مين وصل لآخر دورته بالظبط. لو Celery اتفعّل لاحقًا، سهل التحويل لـ `celery beat` schedule يومي بينادي نفس الكوماند.
 
-**Patch مطلوب على `config/urls.py`:**
-```python
-path('api/marketers/', include('apps.marketers.urls')),
-path('api/dashboard/', include('apps.marketers.dashboard_urls')),
-```
+**قرارات تحتاج تأكيدك قبل Part A4:**
+- إضافة `is_forced_settlement` لـ `WithdrawalRequest` (قرار #12) — موافق عليه؟ (التعديل + الـ migration لسه ما اتعملوش — لازم تعمل `makemigrations` بنفسك بعد تطبيق الـ patch).
+- نفس مبدأ `select_for_update()` المستخدم هنا لازم يتطبّق في Part A6 (طلب السحب) على نفس صف الـ `Marketer`، عشان التصفية الإجبارية وطلب السحب اليدوي ميتصادموش على نفس الرصيد في نفس اللحظة — هفكّرك بيه لما نوصل A6.
 
-**المطلوب في Part A3:**
-- Management command `process_monthly_cycles.py` لتدوير الدورة الشهرية (30 يوم لكل مسوق على حدة) + التصفية الإجبارية لأي رصيد متبقي.
-- التعامل مع حالة فوات أكثر من دورة واحدة (idempotent).
+**المطلوب في Part A4:**
+طلب الترقية لـ Leader Team (بالسؤال عند تحقيق التارجت + شرط الـ10 مسوقين) + الترقية اليدوية الكاملة من الأدمن.
 
 ---
 
 ## ملاحظات مفتوحة تحتاج تأكيد صاحب المشروع
 
 1. **خصم على منتجات محددة** (Part C1): الخصم على الجزء المنطبق فقط من الكارت، وليس الإجمالي الكلي؟
-2. **Celery vs Cron**: هل سيُفعَّل Celery فعلياً على السيرفر أم نكتفي بـ cron job للـ management command؟
-3. **(جديد) `User.role` مقابل `Marketer.role` عند الترقية لـ Leader** — راجع قرار #2 في "القرارات التقنية الثابتة". الافتراض الحالي: `User.role` لا يتغيّر أبدًا، فقط `Marketer.role`.
-4. **(جديد) باترن `dashboard_urls.py`** — هل ده متّسق مع إزاي `apps/orders` و`apps/invoices` بالفعل بيربطوا مسارات `/api/dashboard/`؟ لو فيه باترن تاني فعلي في المشروع، وحّد عليه قبل Part A3 (هيكرر نفس الباترن).
-5. **(جديد) `IsAdminOrStaff` محلية في `apps/marketers`** — لو فيها نسخة موحَّدة قابلة للاستيراد من `apps/dashboard`، استبدلها بدل التكرار.
+2. **Celery vs Cron**: هل سيُفعَّل Celery فعلياً على السيرفر أم نكتفي بـ cron job؟
+3. **`User.role` مقابل `Marketer.role` عند الترقية** — راجع قرار #2.
+4. **باترن `dashboard_urls.py`** — هل متّسق مع `apps/orders`/`apps/invoices`؟
+5. **`IsAdminOrStaff` محلية في `apps/marketers`** — وحّدها لو فيه نسخة مشتركة.
+6. **(جديد — Part A3) `is_forced_settlement` على `WithdrawalRequest`** — قرار يحتاج موافقتك + تطبيق الـ patch + migration بنفسك قبل Part A4.
