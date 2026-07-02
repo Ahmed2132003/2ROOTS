@@ -41,6 +41,8 @@ class OrderSerializer(serializers.ModelSerializer):
     items          = OrderItemSerializer(many=True, read_only=True)
     status_history = OrderStatusHistorySerializer(many=True, read_only=True)
     customer       = serializers.StringRelatedField()
+    # ── تكامل أوردرات المسوقين — إضافي، مفيش تأثير على أي مستهلك حالي للـ API ──
+    marketer_email = serializers.EmailField(source='marketer.user.email', read_only=True, default=None)
 
     class Meta:
         model  = Order
@@ -49,17 +51,21 @@ class OrderSerializer(serializers.ModelSerializer):
             'shipping_name', 'shipping_phone', 'shipping_address', 'shipping_region', 'shipping_fee',
             'shipping_email',
             'notes', 'total', 'items', 'status_history',            
+            'is_marketer_order', 'marketer', 'marketer_email',
             'created_at', 'updated_at'
         ]
 
 
 class OrderListSerializer(serializers.ModelSerializer):
     """نسخة خفيفة للـ listing — بدون items وhistory"""
+    marketer_email = serializers.EmailField(source='marketer.user.email', read_only=True, default=None)
+
     class Meta:
         model  = Order
         fields = [
             'id', 'status', 'total',
             'shipping_name', 'shipping_phone',
+            'is_marketer_order', 'marketer', 'marketer_email',
             'created_at'
         ]
 

@@ -1,3 +1,4 @@
+# apps/orders/models.py
 from django.db import models
 from django.conf import settings
 from apps.products.models import ProductVariant
@@ -38,7 +39,21 @@ class Order(models.Model):
         blank=True,
         related_name='orders'
     )
-    
+
+    # ── Marketers integration ───────────────────────────────────────────────
+    # لو الأوردر ده أصله أوردر مسوق (apps.marketers.MarketerOrder)، بنعلّمه هنا
+    # عشان يستفيد تلقائيًا من كل نظام الأوردرات العادي (داشبورد/فواتير/شحن)
+    # من غير ما نكرر منطق منفصل. راجع apps/marketers/models.py (MarketerOrder.linked_order)
+    # وapps/marketers/signals.py (auto-confirm عند delivered).
+    is_marketer_order = models.BooleanField(default=False, db_index=True)
+    marketer = models.ForeignKey(
+        'marketers.Marketer',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='linked_orders',
+    )
+
     # Snapshot من بيانات العميل وقت الطلب
     # (لأن العميل ممكن يغير بياناته بعدين)
     shipping_name    = models.CharField(max_length=200)

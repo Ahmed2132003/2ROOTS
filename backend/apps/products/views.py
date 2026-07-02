@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -97,6 +98,24 @@ class FeaturedProductsView(generics.ListAPIView):
         return Product.objects.filter(is_active=True).select_related('category').prefetch_related(
             'images', 'variants__stock', 'variants__color', 'variants__size'
         ).order_by('-created_at')[:5]
+
+
+# ─── Public/Authenticated Variants Endpoint ────────────────────────────────────
+# مسار: /api/products/<id>/variants/
+# مختلف تماماً عن action الأدمن variants المسجّل تحت /api/products/admin/products/<id>/variants/
+# المسوّقين (وأي يوزر مسجّل دخول) يقدروا يستخدموه لجلب المتغيرات (الألوان/المقاسات) لمنتج معيّن.
+class ProductVariantsView(generics.ListAPIView):
+    serializer_class   = ProductVariantSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        product = get_object_or_404(Product, pk=self.kwargs['pk'], is_active=True)
+        # لو المنتج simple (مش variants) رجّع قايمة فاضية بدل ما نعمل 404 أو نحاول نجيب حاجة غير موجودة
+        if not product.has_variants:
+            return ProductVariant.objects.none()
+        return product.variants.filter(is_active=True).select_related(
+            'color', 'size', 'stock'
+        )
 
 
 # ─── Admin Views ───────────────────────────────────────────────────────────────

@@ -21,15 +21,22 @@ export default function Navbar() {
   const isRTL     = i18n.language === 'ar';
 
   const t = (key) => ({
-    'nav.home':       isRTL ? 'الرئيسية'       : 'Home',
-    'nav.products':   isRTL ? 'المنتجات'        : 'Products',
-    'nav.profile':    isRTL ? 'الملف الشخصي'   : 'Profile',
-    'nav.orders':     isRTL ? 'طلباتي'          : 'My Orders',
-    'nav.dashboard':  isRTL ? 'لوحة التحكم'    : 'Dashboard',
-    'customers.title':isRTL ? 'العملاء'         : 'Customers',
-    'nav.logout':     isRTL ? 'تسجيل الخروج'   : 'Logout',
-    'nav.login':      isRTL ? 'تسجيل الدخول'   : 'Login',
-    'nav.menu':       isRTL ? 'القائمة'         : 'Menu',
+    'nav.home':           isRTL ? 'الرئيسية'         : 'Home',
+    'nav.products':       isRTL ? 'المنتجات'          : 'Products',
+    'nav.profile':        isRTL ? 'الملف الشخصي'     : 'Profile',
+    'nav.orders':         isRTL ? 'طلباتي'            : 'My Orders',
+    'nav.dashboard':      isRTL ? 'لوحة التحكم'      : 'Dashboard',
+    'customers.title':    isRTL ? 'العملاء'           : 'Customers',
+    'nav.logout':         isRTL ? 'تسجيل الخروج'     : 'Logout',
+    'nav.login':          isRTL ? 'تسجيل الدخول'     : 'Login',
+    'nav.menu':           isRTL ? 'القائمة'           : 'Menu',
+    'nav.marketer':       isRTL ? 'داشبورد المسوق'   : 'Marketer Dashboard',
+    'nav.teamLeader':     isRTL ? 'داشبورد القائد'   : 'Team Leader Dashboard',
+    'nav.marketers':      isRTL ? 'المسوقون'          : 'Marketers',
+    'nav.marketerOrders': isRTL ? 'أوردرات المسوقين' : 'Marketer Orders',
+    'nav.withdrawals':    isRTL ? 'طلبات السحب'       : 'Withdrawals',
+    'nav.rewardTiers':    isRTL ? 'درجات المكافآت'   : 'Reward Tiers',
+    'nav.teamRewards':    isRTL ? 'مكافآت القادة'    : 'Team Rewards',
   }[key] ?? key);
 
   const token = getAccessToken();
@@ -38,6 +45,20 @@ export default function Navbar() {
     queryFn:  () => api.get('/cart/').then((r) => r.data),
     enabled:  isAuthReady && isAuthenticated && Boolean(token),
   });
+
+  // Fetch marketer profile to know if team_leader (only for marketer role users)
+  const userRole = String(user?.role || '').trim().toLowerCase();
+  const isMarketerUser = userRole === 'marketer';
+  const isAdminUser = userRole === 'admin' || userRole === 'staff';
+
+  const { data: marketerProfile } = useQuery({
+    queryKey: ['marketer-profile-nav'],
+    queryFn: () => api.get('/marketers/me/').then((r) => r.data),
+    enabled: isAuthReady && isAuthenticated && isMarketerUser,
+    staleTime: 5 * 60 * 1000, // 5 min cache — nav doesn't need fresh data constantly
+  });
+
+  const isTeamLeader = marketerProfile?.role === 'team_leader';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -58,15 +79,27 @@ export default function Navbar() {
     { to: '/products', label: t('nav.products') },
   ];
 
+  // Build account links based on role
   const accountLinks = [
     { to: '/profile', icon: '👤', label: t('nav.profile') },
     { to: '/orders',  icon: '📦', label: t('nav.orders') },
-    ...(String(user?.role || '').trim().toLowerCase() !== 'customer'
-      ? [
-          { to: '/dashboard',           icon: '📊', label: t('nav.dashboard') },
-          { to: '/dashboard/customers', icon: '👥', label: t('customers.title') },
-        ]
-      : []),
+
+    // Admin/Staff links
+    ...(isAdminUser ? [
+      { to: '/dashboard',                    icon: '📊', label: t('nav.dashboard') },
+      { to: '/dashboard/customers',          icon: '👥', label: t('customers.title') },
+      { to: '/dashboard/marketers',          icon: '🧑‍💼', label: t('nav.marketers') },
+      { to: '/dashboard/marketer-orders',    icon: '📋', label: t('nav.marketerOrders') },
+      { to: '/dashboard/withdrawals',        icon: '💰', label: t('nav.withdrawals') },
+      { to: '/dashboard/reward-tiers',       icon: '🏆', label: t('nav.rewardTiers') },
+      { to: '/dashboard/team-rewards',       icon: '🎁', label: t('nav.teamRewards') },
+    ] : []),
+
+    // Marketer links
+    ...(isMarketerUser ? [
+      { to: '/marketer', icon: '📊', label: t('nav.marketer') },
+      ...(isTeamLeader ? [{ to: '/marketer/team-leader', icon: '👑', label: t('nav.teamLeader') }] : []),
+    ] : []),
   ];
 
   return (
@@ -107,7 +140,6 @@ export default function Navbar() {
                 }}
               />
             ) : (
-              /* Fallback: text only — no tree emoji */
               <span className="nav-logo-text">2ROOTS</span>
             )}
           </Link>
@@ -205,7 +237,22 @@ export default function Navbar() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 6, scale: 0.97 }}
                 transition={{ duration: 0.15 }}
+                style={{ maxHeight: '80vh', overflowY: 'auto' }}
               >
+                {/* Admin section divider */}
+                {isAdminUser && (
+                  <div style={{ padding: '4px 12px', fontSize: '10px', color: 'var(--accent)', fontWeight: 800, letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '4px' }}>
+                    لوحة التحكم
+                  </div>
+                )}
+
+                {/* Marketer section divider */}
+                {isMarketerUser && (
+                  <div style={{ padding: '4px 12px', fontSize: '10px', color: 'var(--accent)', fontWeight: 800, letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '4px' }}>
+                    {isTeamLeader ? '👑 قائد الفريق' : '🧑‍💼 المسوق'}
+                  </div>
+                )}
+
                 {accountLinks.map((item) => (
                   <Link
                     key={item.to}
